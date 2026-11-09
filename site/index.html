@@ -1,0 +1,2992 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Tube</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='1' y='4' width='22' height='16' rx='5' fill='%23ff4242'/><path d='M10 8.5v7l6-3.5z' fill='white'/></svg>">
+<script>
+  // Apply the saved theme before first paint so there is no flash.
+  try { const t = localStorage.getItem("jeetube-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}
+</script>
+<style>
+:root {
+  --bg: #0f0f0f; --bg1: #181818; --bg2: #212121; --bg3: #303030;
+  --fg: #f1f1f1; --fg2: #aaaaaa; --line: #2b2b2b;
+  --brand: #ff4242; --radius: 12px;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #ffffff; --bg1: #f2f2f2; --bg2: #e9e9e9; --bg3: #dcdcdc;
+  --fg: #0f0f0f; --fg2: #606060; --line: #e2e2e2;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #ffffff; --bg1: #f2f2f2; --bg2: #e9e9e9; --bg3: #dcdcdc;
+    --fg: #0f0f0f; --fg2: #606060; --line: #e2e2e2;
+    color-scheme: light;
+  }
+  :root:not([data-theme="dark"]) .icon-moon { display: none; }
+  :root:not([data-theme="dark"]) .icon-sun { display: block; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; }
+img { display: block; }
+
+/* ---------- Header ---------- */
+header {
+  position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 8px;
+  height: 56px; padding: 0 16px; background: var(--bg); border-bottom: 1px solid transparent;
+}
+header.scrolled { border-bottom-color: var(--line); }
+.logo { display: flex; align-items: center; gap: 8px; flex: none; padding: 4px 8px 4px 0; }
+.logo svg { width: 32px; height: 23px; }
+.logo span { font-size: 19px; font-weight: 700; letter-spacing: -0.4px; }
+.search { flex: 1; display: flex; justify-content: center; min-width: 0; }
+.search .box {
+  display: flex; align-items: center; width: min(600px, 100%);
+  border: 1px solid var(--bg3); border-radius: 20px; overflow: hidden; background: var(--bg);
+}
+.search input {
+  flex: 1; min-width: 0; height: 38px; padding: 0 16px; border: 0; background: transparent; outline: none;
+}
+.search input::placeholder { color: var(--fg2); }
+.search button {
+  flex: none; width: 56px; height: 38px; display: grid; place-items: center;
+  background: var(--bg1); border-left: 1px solid var(--bg3);
+}
+.search button:hover { background: var(--bg2); }
+.search svg { width: 20px; height: 20px; fill: var(--fg); }
+.hdr-right { display: flex; align-items: center; gap: 2px; flex: none; }
+.icon-btn {
+  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+}
+.icon-btn:hover { background: var(--bg2); }
+.icon-btn svg { width: 22px; height: 22px; fill: var(--fg); }
+.icon-sun { display: none; }
+
+/* ---------- Layout ---------- */
+.catbar {
+  position: sticky; top: 56px; z-index: 40; display: flex; align-items: center; gap: 8px;
+  height: 47px; padding: 0 24px; overflow-x: auto; background: var(--bg);
+  border-bottom: 1px solid var(--line); scrollbar-width: none;
+}
+.catbar::-webkit-scrollbar { display: none; }
+.cchip {
+  display: inline-flex; align-items: center; gap: 7px; flex: none; height: 32px;
+  padding: 0 12px; border-radius: 16px; background: var(--bg2); color: var(--fg);
+  font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer;
+}
+.cchip:hover { background: var(--bg3); }
+.cchip.on { background: var(--fg); color: var(--bg); }
+.cchip b { font-weight: 400; font-size: 12px; opacity: 0.7; }
+.cchip.off { opacity: 0.45; }
+.cchip.off > span:first-child { text-decoration: line-through; }
+.cchip .eye { opacity: 0; flex: none; width: 18px; height: 18px; padding: 1px; border-radius: 50%; color: inherit; }
+.cchip:hover .eye, .cchip.on .eye, .cchip.off .eye { opacity: 0.85; }
+.cchip .eye:hover { background: rgba(127, 127, 127, 0.35); }
+.cchip .unread { font-style: normal; font-size: 11px; opacity: 0.65; }
+.stars { display: inline-flex; align-items: center; gap: 1px; padding: 2px 6px; }
+.stars button { font-size: 17px; line-height: 1; color: var(--fg2); padding: 2px; border-radius: 6px; }
+.stars button.lit { color: #f6c945; }
+.stars button:hover { color: #f6c945; }
+.ratebadge { color: #f6c945; font-size: 11.5px; flex: none; }
+.catpick {
+  height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--bg3);
+  background: var(--bg2); font-size: 13.5px; font-weight: 600; max-width: 260px; outline: none;
+}
+.catpick:focus { border-color: var(--fg2); }
+.shelfhead { margin: 16px 0 10px; font-size: 16px; }
+.shelf { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 12px; scrollbar-width: thin; }
+.shelf .mini { flex: 0 0 168px; flex-direction: column; gap: 6px; margin-bottom: 0; }
+.shelf .mini .thumb { width: 100%; }
+.sidechips { flex-wrap: wrap; overflow: visible; padding: 4px 0 12px; }
+.layout { display: flex; align-items: flex-start; gap: 0; }
+.side {
+  position: sticky; top: 103px; align-self: flex-start; flex: none;
+  width: 240px; height: calc(100vh - 103px); overflow-y: auto; padding: 8px 12px 32px;
+  scrollbar-width: thin;
+}
+@media (max-width: 640px) {
+  .catbar { padding: 0 8px; gap: 6px; }
+}
+.side h4 {
+  margin: 16px 0 6px; padding: 0 10px; font-size: 13px; font-weight: 600; color: var(--fg2);
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.side hr { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
+.chfilter {
+  width: 100%; height: 34px; margin: 4px 0 8px; padding: 0 12px; border-radius: 17px;
+  border: 1px solid var(--bg3); background: var(--bg1); outline: none; font-size: 13px;
+}
+.chfilter:focus { border-color: var(--fg2); }
+.sideempty { color: var(--fg2); font-size: 12px; padding: 8px 10px; line-height: 1.4; }
+.item {
+  display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 10px;
+  font-size: 14px; min-height: 40px;
+}
+.item:hover { background: var(--bg2); }
+.item.active { background: var(--bg1); font-weight: 600; }
+.item.active:hover { background: var(--bg2); }
+.item svg.nav { width: 20px; height: 20px; fill: currentColor; flex: none; }
+.item .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .cnt { margin-left: auto; color: var(--fg2); font-size: 12px; flex: none; }
+main { flex: 1; min-width: 0; padding: 0 24px 64px; }
+
+/* ---------- Avatars ---------- */
+.av {
+  position: relative; flex: none; border-radius: 50%; overflow: hidden;
+  display: grid; place-items: center; background: var(--bg3); color: var(--fg);
+  width: 32px; height: 32px; font-size: 13px; font-weight: 700; text-transform: uppercase;
+}
+.av img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.av.xl { width: 100px; height: 100px; font-size: 40px; }
+.av.lg { width: 40px; height: 40px; font-size: 16px; }
+
+/* ---------- Chips ---------- */
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 14px 0 6px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; height: 32px; padding: 0 12px; border-radius: 8px; background: var(--bg2);
+  font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;
+  transition: background 0.12s;
+}
+.chip:hover { background: var(--bg3); }
+.chip.on { background: var(--fg); color: var(--bg); }
+.chip .av { width: 20px; height: 20px; font-size: 9px; }
+
+/* ---------- Video grid ---------- */
+.grid {
+  display: grid; gap: 28px 16px; padding-top: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+.card { display: block; }
+.card .thumb {
+  position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius); overflow: hidden;
+  background: var(--bg1);
+}
+.card .thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.25s ease; }
+.card:hover .thumb img { transform: scale(1.03); }
+.card .dur {
+  position: absolute; right: 6px; bottom: 6px; padding: 1px 5px; border-radius: 5px;
+  background: rgba(0, 0, 0, 0.82); color: #fff; font-size: 12px; font-weight: 600;
+  letter-spacing: 0.2px;
+}
+.card .meta { display: flex; gap: 12px; margin-top: 10px; }
+.card .t {
+  font-size: 14px; font-weight: 600; line-height: 20px; letter-spacing: -0.1px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.card .sub { color: var(--fg2); font-size: 12.5px; margin-top: 3px; display: flex; flex-wrap: wrap; gap: 4px; }
+.card .sub .chnl { cursor: pointer; }
+.card .sub .chnl:hover { color: var(--fg); text-decoration: underline; }
+.sentinel { height: 1px; }
+
+/* ---------- Hide controls / courses / modal ---------- */
+.cardwrap { position: relative; }
+.cardwrap .hidebtn {
+  position: absolute; top: 6px; left: 6px; width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center; background: rgba(0, 0, 0, 0.78); color: #fff;
+  font-size: 13px; line-height: 1; opacity: 0; transition: opacity 0.12s;
+}
+.cardwrap:hover .hidebtn, .cardwrap .hidebtn:focus-visible { opacity: 1; }
+.cardwrap .tick {
+  position: absolute; left: 6px; bottom: 6px; padding: 1px 6px; border-radius: 5px;
+  background: rgba(0, 0, 0, 0.82); color: #6ee7a8; font-size: 11px; font-weight: 700;
+}
+.feednote { color: var(--fg2); font-size: 12.5px; padding: 10px 2px 0; }
+.feednote button { color: var(--brand); font-weight: 700; }
+.item[data-href] { cursor: pointer; }
+.item .eye { margin-left: 2px; flex: none; color: var(--fg2); padding: 4px; border-radius: 50%; opacity: 0; }
+.item:hover .eye, .item .eye:focus-visible { opacity: 1; }
+.item.off { opacity: 0.45; }
+.item.off .name { text-decoration: line-through; }
+.item.off .eye { opacity: 1; }
+.item.course .name { white-space: normal; display: flex; flex-direction: column; line-height: 1.3; }
+.item .csub { font-size: 11px; color: var(--fg2); font-weight: 400; }
+h4 .addbtn {
+  margin-left: 6px; width: 20px; height: 20px; border-radius: 50%; background: var(--bg2);
+  color: var(--fg); font-size: 14px; line-height: 1; vertical-align: middle;
+}
+h4 .addbtn:hover { background: var(--bg3); }
+.linkbtn { color: var(--brand); font-weight: 700; }
+.coursebar { height: 6px; max-width: 420px; margin-top: 12px; border-radius: 3px; background: var(--bg2); overflow: hidden; }
+.coursebar > div { height: 100%; background: var(--brand); transition: width 0.2s; }
+.tunerow { margin: 16px 0; }
+.tunerow label { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; font-weight: 600; }
+.tunerow label b { color: var(--brand); font-variant-numeric: tabular-nums; flex: none; }
+.tunerow input[type="range"] { width: 100%; margin: 9px 0 5px; accent-color: var(--brand); }
+.tunerow .hint { color: var(--fg2); font-size: 12px; line-height: 1.45; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.modal { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; background: rgba(0, 0, 0, 0.62); }
+.modal[hidden] { display: none; }
+.modal .panel {
+  width: min(680px, 100%); max-height: min(84vh, 760px); display: flex; flex-direction: column;
+  background: var(--bg1); border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+}
+.modal h2 { margin: 0; padding: 18px 20px 10px; font-size: 17px; }
+.modal .body { padding: 0 20px 8px; overflow-y: auto; }
+.modal .foot { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 14px 20px; border-top: 1px solid var(--line); }
+.modal .foot .muted { margin-left: auto; color: var(--fg2); font-size: 12.5px; }
+.modal input[type="text"], .modal input[type="search"], .modal select {
+  height: 38px; padding: 0 12px; border: 1px solid var(--bg3); border-radius: 10px;
+  background: var(--bg); color: var(--fg); outline: none; font-size: 13.5px;
+}
+.modal input[type="text"], .modal input[type="search"] { width: 100%; }
+.modal .pickerrow { display: flex; gap: 8px; margin: 10px 0; }
+.modal .pickerrow select { flex: none; max-width: 210px; }
+.modal .picklist { border-top: 1px solid var(--line); }
+.pickrow { display: flex; align-items: center; gap: 10px; padding: 7px 2px; border-bottom: 1px solid var(--line); font-size: 13px; cursor: pointer; }
+.pickrow img { width: 64px; height: 36px; border-radius: 6px; object-fit: cover; flex: none; }
+.pickrow .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pickrow .c { color: var(--fg2); font-size: 11.5px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#toast {
+  position: fixed; left: 20px; bottom: 20px; z-index: 80; max-width: min(520px, 90vw);
+  display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 10px;
+  background: var(--bg2); color: var(--fg); font-size: 13px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  opacity: 0; transform: translateY(10px); pointer-events: none; transition: 0.18s;
+}
+#toast.show { opacity: 1; transform: none; pointer-events: auto; }
+#toast button { color: var(--brand); font-weight: 700; flex: none; }
+
+/* ---------- Watch ---------- */
+.watch { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; padding-top: 20px; }
+.watch .player { aspect-ratio: 16 / 9; background: #000; border-radius: var(--radius); overflow: hidden; }
+.watch .player iframe, .watch .player > div { width: 100%; height: 100%; border: 0; display: block; }
+.watch h1 { font-size: 20px; line-height: 27px; font-weight: 700; margin: 14px 0 0; letter-spacing: -0.2px; }
+.chrow { display: flex; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+.chrow .nm { font-weight: 600; font-size: 15px; }
+.chrow .nm:hover { text-decoration: underline; }
+.chrow .cnt { color: var(--fg2); font-size: 12px; margin-top: 1px; }
+.chrow .actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.pill {
+  height: 36px; padding: 0 16px; border-radius: 18px; background: var(--bg2);
+  font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;
+}
+.pill:hover { background: var(--bg3); }
+.pill.primary { background: var(--fg); color: var(--bg); }
+.pill.primary:hover { opacity: 0.9; }
+.pill input { accent-color: var(--brand); margin: 0; }
+.desc { background: var(--bg1); border-radius: var(--radius); padding: 12px 14px; margin-top: 14px; font-size: 13.5px; }
+.desc .stats { font-weight: 600; }
+.desc .body { margin-top: 6px; color: var(--fg); white-space: pre-wrap; }
+.desc .tagline { color: var(--fg2); margin-top: 2px; }
+.secondary h3 { margin: 2px 0 10px; font-size: 15px; }
+.secondary .autoplay {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 14px; color: var(--fg2); font-size: 13px;
+}
+.mini { display: flex; gap: 10px; margin-bottom: 10px; border-radius: 10px; }
+.mini:hover .t { color: var(--fg); }
+.mini .thumb {
+  position: relative; width: 168px; flex: none; aspect-ratio: 16 / 9; border-radius: 8px;
+  overflow: hidden; background: var(--bg1);
+}
+.mini .thumb img { width: 100%; height: 100%; object-fit: cover; }
+.mini .thumb .dur { position: absolute; right: 4px; bottom: 4px; padding: 1px 4px; border-radius: 4px; background: rgba(0, 0, 0, 0.82); color: #fff; font-size: 11px; font-weight: 600; }
+.mini .t {
+  font-size: 13.5px; font-weight: 600; line-height: 19px; color: var(--fg);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.mini .sub { color: var(--fg2); font-size: 12px; margin-top: 4px; }
+
+/* ---------- Channel / pages ---------- */
+.chhead { display: flex; gap: 24px; align-items: center; padding: 24px 0 4px; }
+.chhead h1 { margin: 0; font-size: 28px; letter-spacing: -0.5px; }
+.chhead .sub { color: var(--fg2); margin-top: 4px; font-size: 13px; }
+.chhead .blurb { color: var(--fg2); margin-top: 8px; max-width: 780px; font-size: 13.5px; }
+.chhead .actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+.pagetitle { font-size: 20px; margin: 22px 0 0; letter-spacing: -0.2px; }
+.pagetitle .muted { color: var(--fg2); font-weight: 400; }
+.about { max-width: 820px; padding-top: 24px; }
+.about h1 { font-size: 26px; margin: 0 0 12px; }
+.about h2 { font-size: 17px; margin: 26px 0 8px; }
+.about p, .about li { color: var(--fg); font-size: 14px; line-height: 1.65; }
+.about .muted { color: var(--fg2); }
+.about ul { padding-left: 20px; }
+.about code, .about pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
+  background: var(--bg1); border-radius: 6px;
+}
+.about code { padding: 1px 5px; }
+.about pre { padding: 12px; overflow-x: auto; }
+.about a.link { color: #7cc4ff; text-decoration: underline; }
+.stats { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.stat { background: var(--bg1); border-radius: 10px; padding: 10px 14px; font-size: 13px; }
+.empty { padding: 60px 8px; color: var(--fg2); text-align: center; font-size: 14px; }
+.empty code { background: var(--bg1); padding: 2px 6px; border-radius: 5px; }
+kbd { background: var(--bg2); border-radius: 5px; padding: 1px 5px; font-size: 12px; font-family: inherit; }
+
+@media (max-width: 1100px) {
+  .watch { grid-template-columns: minmax(0, 1fr); }
+  .secondary { max-width: 760px; }
+}
+@media (max-width: 900px) {
+  .side { display: none; }
+  main { padding: 0 16px 64px; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px 12px; }
+  .chhead { gap: 14px; }
+  .chhead .av.xl { width: 64px; height: 64px; font-size: 26px; }
+  .chhead h1 { font-size: 21px; }
+}
+@media (max-width: 640px) {
+  header { padding: 0 8px; gap: 4px; }
+  .logo span { display: none; }
+  .search button { width: 44px; }
+  .mini .thumb { width: 140px; }
+}
+/* ---------- Recommender UI: shelves, reasons, channel graph, Recs Lab ---------- */
+.shelfwrap { margin: 4px 0 6px; }
+.shelfhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.shelfnote { color: var(--fg2); font-size: 12px; font-weight: 500; letter-spacing: 0; }
+.whyline { display: none; color: var(--fg2); font-size: 11.5px; line-height: 15px; margin-top: 4px; }
+.whyline.show { display: block; }
+.cardwrap:hover .whyline, .cardwrap:focus-within .whyline { display: block; }
+.cardwrap .nibtn {
+  position: absolute; top: 6px; left: 40px; width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center; background: rgba(0, 0, 0, 0.78); color: #fff;
+  font-size: 14px; line-height: 1; opacity: 0; transition: opacity 0.12s;
+}
+.cardwrap:hover .nibtn, .cardwrap .nibtn:focus-visible { opacity: 1; }
+.cardwrap .nibtn:hover { background: var(--brand); }
+.chcard {
+  flex: 0 0 168px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  text-align: center; padding: 12px 8px; border: 1px solid var(--line); border-radius: var(--radius);
+}
+.chcard:hover { background: var(--bg3); }
+.chcard .av { width: 56px; height: 56px; font-size: 18px; }
+.cc-name { font-size: 13px; font-weight: 600; line-height: 17px; }
+.cc-sub { font-size: 11.5px; color: var(--fg2); }
+.weights { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.wchip {
+  font-size: 11px; color: var(--fg2); border: 1px solid var(--line); border-radius: 999px;
+  padding: 2px 8px; font-variant-numeric: tabular-nums;
+}
+.wchip b { color: var(--fg); }
+.labout { margin-top: 10px; }
+table.metrics { border-collapse: collapse; width: 100%; max-width: 620px; font-size: 13px; }
+table.metrics th, table.metrics td {
+  text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+table.metrics th:first-child, table.metrics td:first-child { text-align: left; }
+table.metrics thead th { color: var(--fg2); font-weight: 600; }
+table.metrics td.up { color: #3fb950; font-weight: 700; }
+table.metrics td.down { color: var(--brand); font-weight: 700; }
+</style>
+</head>
+<body>
+<header id="hdr">
+  <a class="logo" href="#/" title="My Tube — home">
+    <svg viewBox="0 0 30 22" aria-hidden="true"><rect width="30" height="22" rx="6" fill="#ff4242"/><path d="M12 6.5v9l8-4.5z" fill="#fff"/></svg>
+    <span>My Tube</span>
+  </a>
+  <form class="search" id="searchForm" role="search">
+    <div class="box">
+      <input id="q" type="search" placeholder="Search videos" autocomplete="off" aria-label="Search videos">
+      <button type="submit" aria-label="Search">
+        <svg viewBox="0 0 24 24"><path d="M20.87 20.17l-5.59-5.59A7.46 7.46 0 0 0 17 10a7 7 0 1 0-7 7c1.75 0 3.35-.64 4.58-1.72l5.59 5.59.7-.7zM10 16a6 6 0 1 1 0-12 6 6 0 0 1 0 12z"/></svg>
+      </button>
+    </div>
+  </form>
+  <div class="hdr-right">
+    <button class="icon-btn" id="luckyBtn" title="Play a random video (Shift+N)" aria-label="Play a random video">
+      <svg viewBox="0 0 24 24"><path d="M18.15 13.65 22 17.5l-3.85 3.85-.71-.71L20.09 18H19c-2.84 0-4.94-2.04-6.97-4.01l.71-.71C14.59 15.12 16.55 17 19 17h1.09l-2.65-2.65.71-.7zM18.15 2.65l-.71.71L20.09 6H19c-5.53 0-8.72 6.65-11.39 9.83C6.43 17.25 5.03 18 3 18v1c2.4 0 4.04-.9 5.38-2.5C11.2 13.15 14.08 7 19 7h1.09l-2.65 2.65.71.71L22 6.5l-3.85-3.85zM3 5v1c1.74 0 3.04.67 4.29 1.82l.7-.71C6.6 5.86 5.09 5 3 5z"/></svg>
+    </button>
+    <button class="icon-btn" id="themeBtn" title="Switch light / dark theme" aria-label="Switch theme">
+      <svg class="icon-moon" viewBox="0 0 24 24"><path d="M14.5 2.5a9.5 9.5 0 1 0 7 13.9A8 8 0 0 1 14.5 2.5z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0-5 1 3h-2l1-3zm0 20-1-3h2l-1 3zM2 12l3-1v2l-3-1zm20 0-3 1v-2l3 1zM4.9 4.9l2.8 1.4-1.4 1.4-1.4-2.8zm14.2 14.2-2.8-1.4 1.4-1.4 1.4 2.8zM4.9 19.1l1.4-2.8 1.4 1.4-2.8 1.4zM19.1 4.9l-1.4 2.8-1.4-1.4 2.8-1.4z"/></svg>
+    </button>
+    <a class="icon-btn" id="aboutBtn" href="#/about" title="About this site" aria-label="About">?</a>
+  </div>
+</header>
+
+<nav class="catbar" id="catBar" aria-label="Categories"></nav>
+
+<div class="layout">
+  <nav class="side" id="side" aria-label="Channels"></nav>
+  <main id="main"><div class="empty">Loading videos…</div></main>
+</div>
+
+<div class="modal" id="courseModal" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="cmTitle">
+    <h2 id="cmTitle">New course</h2>
+    <div class="body" id="cmBody"></div>
+    <div class="foot">
+      <button class="pill primary" id="cmSave">Create course</button>
+      <button class="pill" id="cmCancel">Cancel</button>
+      <span class="muted" id="cmCount"></span>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="recoModal" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="recoTitle" style="max-width:520px">
+    <h2 id="recoTitle">Tune the ranking</h2>
+    <div class="body" id="recoBody"></div>
+    <div class="foot">
+      <button class="pill primary" id="recoDone">Done</button>
+      <button class="pill" id="recoDefaults">Defaults</button>
+    </div>
+  </div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  const $ = (s, el = document) => el.querySelector(s);
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const data = window.JEE_DATA;
+  const main = $("#main");
+
+  /* ---------- saved state ---------- */
+  const store = {
+    get(key, fallback) {
+      try { const raw = localStorage.getItem("mytube-" + key); return raw ? JSON.parse(raw) : fallback; }
+      catch { return fallback; }
+    },
+    set(key, value) {
+      try { localStorage.setItem("mytube-" + key, JSON.stringify(value)); } catch {}
+    },
+  };
+  const hiddenCh = new Set(store.get("hidden-ch", []));   // channel ids, not indices: survives rebuilds
+  const hiddenVid = new Set(store.get("hidden-vid", [])); // video ids
+  const hiddenCat = new Set(store.get("hidden-cat", [])); // category ids: hides every channel in them
+  let history = store.get("history", []);                 // [{id, ch, t}], oldest first
+  let courses = store.get("courses", []);                 // [{id, name, videos: [ids], created}]
+  const saveHidden = () => {
+    store.set("hidden-ch", [...hiddenCh]);
+    store.set("hidden-vid", [...hiddenVid]);
+    store.set("hidden-cat", [...hiddenCat]);
+  };
+  const saveCourses = () => store.set("courses", courses);
+  const catOv = store.get("cat-ov", {});             // channel id -> category id: manual bucket overrides
+  const saveCatOv = () => store.set("cat-ov", catOv);
+  let ratings = store.get("ratings", {});            // channel id -> 1..5 stars
+  const saveRatings = () => store.set("ratings", ratings);
+  // 1 star halves a channel's scores, 5 stars boosts them 1.5x, 3 stars is neutral.
+  const rateFactor = i => { const r = ratings[CH[i].id]; return r ? 1 + (r - 3) * 0.25 : 1; };
+
+  // Ranking knobs, tuned from the UI. affinity is a % boost for channels you watch,
+  // halfLife is how many days until an old watch counts half, watched is the share of
+  // score an already-seen video keeps.
+  const RECO_DEFAULTS = { affinity: 60, halfLife: 90, watched: 30, serendipity: 30 };
+  let reco = Object.assign({}, RECO_DEFAULTS, store.get("reco", {}));
+  const saveReco = () => store.set("reco", reco);
+  // Feed filters: Hide Shorts (<60s) and/or only unwatched videos, across every feed.
+  let filters = Object.assign({ shorts: false, unwatched: false }, store.get("filters", {}));
+  const saveFilters = () => store.set("filters", filters);
+  // Categories/channels marked entirely watched, without flooding the 800-entry history
+  // with one entry per video. Their videos count as watched until the mark is cleared.
+  let seenAll = (() => {
+    const raw = store.get("seen", { cats: [], chs: [] });
+    const strArr = v => Array.isArray(v) ? v.filter(x => typeof x === "string") : [];
+    return { cats: new Set(strArr(raw.cats)), chs: new Set(strArr(raw.chs)) };
+  })();
+  const saveSeen = () => store.set("seen", { cats: [...seenAll.cats], chs: [...seenAll.chs] });
+  let _watchedCache = null;
+  const invalidateWatched = () => { _watchedCache = null; };
+  // Watched = in your history, or in a bucket you marked all-watched. Cached because it
+  // runs inside video-filter loops; call invalidateWatched() after any change to either.
+  const watchedSet = () => {
+    if (!_watchedCache) {
+      const s = new Set(history.map(h => h.id));
+      if (seenAll.cats.size || seenAll.chs.size) {
+        for (const v of V) {
+          if (hiddenVid.has(v.id)) continue;
+          const cat = catOfCh ? catOfCh[v.ch] : null;
+          if (seenAll.chs.has(CH[v.ch].id) || (cat && seenAll.cats.has(cat))) s.add(v.id);
+        }
+      }
+      _watchedCache = s;
+    }
+    return _watchedCache;
+  };
+
+  let CH = [];
+  let V = [];
+  let byChannel = [];
+  let byId = new Map();
+  const seen = new Set();
+
+  /* ---------- formatting ---------- */
+  function fmtDur(s) {
+    if (!s) return "";
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
+    return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(sec).padStart(2, "0");
+  }
+  function fmtViews(n) {
+    if (n == null) return "";
+    if (n >= 1e9) return (n / 1e9).toFixed(n >= 1e10 ? 0 : 1).replace(/\.0$/, "") + "B views";
+    if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, "") + "M views";
+    if (n >= 1e3) return (n / 1e3).toFixed(n >= 1e4 ? 0 : 1).replace(/\.0$/, "") + "K views";
+    return n + " view" + (n === 1 ? "" : "s");
+  }
+  function fmtNum(n) { return n == null ? "" : n.toLocaleString(); }
+  function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  }
+
+  /* ---------- shared markup ---------- */
+  const thumbURL = id => `https://i.ytimg.com/vi/${id}/hq720.jpg`;
+  const thumbFallback = id => `https://i.ytimg.com/vi/${id}/mqdefault.jpg`;
+  const initials = n => (n || "?").replace(/[^\p{L}\p{N} ]/gu, "").split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("") || "?";
+
+  function avatar(c, cls = "") {
+    const img = c.avatar ? `<img src="${esc(c.avatar)}" alt="" loading="lazy" onerror="this.remove()">` : "";
+    return `<span class="av ${cls}">${esc(initials(c.name))}${img}</span>`;
+  }
+
+  // Thumbnails fall back to the smaller still if hq720 is missing.
+  const imgTag = id => `<img loading="lazy" src="${thumbURL(id)}" alt="" onerror="this.onerror=null;this.src='${thumbFallback(id)}'">`;
+
+  function card(v, showChannel = true, opts = {}) {
+    const c = CH[v.ch];
+    const sub = showChannel
+      ? `<span class="chnl" data-href="#/c/${c.i}">${esc(c.name)}</span>${v.views != null ? `<span>· ${fmtViews(v.views)}</span>` : ""}`
+      : (v.views != null ? fmtViews(v.views) : "");
+    const why = opts.why === false ? "" : whyFor(v.id);
+    return `<div class="cardwrap">
+      <a class="card" href="#/watch/${v.id}" data-vid="${v.id}">
+        <div class="thumb">${imgTag(v.id)}${v.dur ? `<span class="dur">${fmtDur(v.dur)}</span>` : ""}${opts.watched ? `<span class="tick" title="Watched">✓ watched</span>` : ""}</div>
+        <div class="meta">${showChannel ? avatar(c) : ""}<div style="min-width:0">
+          <div class="t">${esc(v.title)}</div>
+          <div class="sub">${sub}</div>
+          ${why ? `<div class="whyline" title="Why this is here">✦ ${esc(why)}</div>` : ""}
+        </div></div>
+      </a>
+      <button class="nibtn" data-notint="${v.id}" title="Not interested — sink this video" aria-label="Not interested">⊘</button>
+      <button class="hidebtn" data-hidevid="${v.id}" title="Hide this video from your feeds" aria-label="Hide this video">✕</button>
+    </div>`;
+  }
+
+  function mini(v, why = "") {
+    const c = CH[v.ch];
+    return `<a class="mini" href="#/watch/${v.id}" data-vid="${v.id}" title="${esc(why ? why : c.name)}">
+      <div class="thumb">${imgTag(v.id)}${v.dur ? `<span class="dur">${fmtDur(v.dur)}</span>` : ""}</div>
+      <div style="min-width:0">
+        <div class="t">${esc(v.title)}</div>
+        <div class="sub">${esc(c.name)}</div>
+        <div class="sub">${fmtViews(v.views)}</div>
+        ${why ? `<div class="whyline show">✦ ${esc(why)}</div>` : ""}
+      </div>
+    </a>`;
+  }
+
+  // A channel tile for the topic-graph rails ("channels like this one").
+  function chCard(i, score) {
+    const c = CH[i];
+    return `<a class="chcard" href="#/c/${i}">${avatar(c, "lg")}
+      <div class="cc-name">${esc(c.name)}</div>
+      <div class="cc-sub">${fmtNum(c.n)} videos${score ? ` · ${Math.round(score * 100)}% topic match` : ""}</div>
+    </a>`;
+  }
+
+  // Infinite-scrolling grid fed by more(n) -> next batch of videos.
+  function infiniteGrid(host, more, opts = {}) {
+    const grid = document.createElement("div");
+    grid.className = "grid";
+    const sentinel = document.createElement("div");
+    sentinel.className = "sentinel";
+    host.append(grid, sentinel);
+    let done = false;
+    const load = () => {
+      if (done) return;
+      const batch = more(24);
+      if (!batch.length) {
+        done = true;
+        if (!grid.children.length) grid.outerHTML = `<div class="empty">${opts.empty || "Nothing here yet."}</div>`;
+        return;
+      }
+      grid.insertAdjacentHTML("beforeend", batch.map(v => card(v, opts.showChannel !== false, { watched: opts.watched ? opts.watched.has(v.id) : false })).join(""));
+    };
+    load(); load();
+    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) load(); }, { rootMargin: "1000px" });
+    io.observe(sentinel);
+    return { stop: () => io.disconnect() };
+  }
+
+  /* ---------- sidebar ---------- */
+  function routeFromHash() {
+    const h = location.hash.replace(/^#\/?/, "");
+    return /^c\/\d+$/.test(h) || /^t\/[\w-]+$/.test(h) || /^course\/[\w-]+$/.test(h) || h === "about" ? h : "home";
+  }
+
+  /* ---------- hiding ---------- */
+  const chOff = c => hiddenCh.has(c.id) || catOff(c);
+  const videoFiltered = v => (filters.shorts && (v.dur || 0) > 0 && v.dur < 60) || (filters.unwatched && watchedSet().has(v.id));
+  const vOff = v => hiddenVid.has(v.id) || chOff(CH[v.ch]) || videoFiltered(v);
+  const eyeOpen = `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 5C7 5 3 9.5 3 12s4 7 9 7 9-4.5 9-7-4-7-9-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg>`;
+  const eyeOff = `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M3 4.3 4.3 3 21 19.7 19.7 21l-3-3c-1.4.6-3 1-4.7 1-5 0-9-4.5-9-7 0-.9.5-2 1.4-3.1L3 4.3zM12 5c5 0 9 4.5 9 7 0 .8-.4 1.7-1 2.6l-3.2-3.2A4 4 0 0 0 10 6.2L8.5 4.7C9.6 4.9 10.8 5 12 5z"/></svg>`;
+
+  function updateHiddenNote() {
+    const note = $("#hiddenNote");
+    if (!note) return;
+    const nch = CH.filter(c => hiddenCh.has(c.id)).length, nv = hiddenVid.size, nc = hiddenCat.size;
+    note.innerHTML = nch || nv || nc
+      ? `Hidden: ${fmtNum(nch)} channel${nch === 1 ? "" : "s"} · ${fmtNum(nv)} video${nv === 1 ? "" : "s"} · ${fmtNum(nc)} categor${nc === 1 ? "y" : "ies"} · <button class="linkbtn" id="showAll">Show all</button>`
+      : "";
+    const all = $("#showAll", note);
+    if (all) all.onclick = () => {
+      hiddenCh.clear(); hiddenVid.clear(); hiddenCat.clear(); saveHidden();
+      invalidateWatched();
+      renderSide(); route();
+      toast("Everything is visible again.");
+    };
+  }
+
+  let toastTimer = 0;
+  function toast(text, actionLabel, action) {
+    const el = $("#toast");
+    const span = document.createElement("span");
+    span.textContent = text;
+    el.replaceChildren(span);
+    if (actionLabel) {
+      const b = document.createElement("button");
+      b.textContent = actionLabel;
+      b.onclick = () => { el.classList.remove("show"); if (action) action(); };
+      el.append(b);
+    }
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 7000);
+  }
+
+  function hideVideo(v, fromEl) {
+    hiddenVid.add(v.id);
+    saveHidden();
+    invalidateWatched();
+    updateHiddenNote();
+    const wrap = fromEl && fromEl.closest(".cardwrap");
+    if (location.hash === `#/watch/${v.id}`) location.hash = "#/";
+    else if (wrap) wrap.remove();
+    else route();
+    toast(`Hidden: “${v.title.slice(0, 68)}${v.title.length > 68 ? "…" : ""}”`, "Undo", () => {
+      hiddenVid.delete(v.id); saveHidden(); invalidateWatched(); updateHiddenNote(); route();
+    });
+  }
+
+  function toggleChannel(i) {
+    const c = CH[i];
+    if (!c) return;
+    const wasHidden = hiddenCh.has(c.id);
+    if (wasHidden) hiddenCh.delete(c.id); else hiddenCh.add(c.id);
+    saveHidden();
+    renderSide();
+    route();
+    if (wasHidden) toast(`${c.name} is back in your feeds.`);
+    else toast(`Hid ${c.name} — out of All videos, search and recommendations.`, "Undo", () => {
+      hiddenCh.delete(c.id); saveHidden(); renderSide(); route();
+    });
+  }
+
+  /* ---------- recommendations ----------
+
+     A hybrid, two-stage recommender with the same shape as YouTube's own pipeline —
+     candidate generation → ranking → re-ranking — assembled from published, open
+     algorithms and no model files, because this page has to stay one offline file:
+
+       candidates   BM25 over title uni/bi-grams ....... Robertson & Zaragoza 2009 (Lucene, rank_bm25)
+                    random-projection TF-IDF vectors ... Johnson–Lindenstrauss 1984 / Random Indexing
+                    channel topic graph ................ cosine of channel centroid vectors
+                    session transitions ................ SKNN / FPMC session-based recsys
+       ranking      pairwise BPR linear ranker .......... Rendle et al., BPR 2009 (SGD, trained on your history)
+       re-ranking   MMR diversification ................ Carbonell & Goldstein, SIGIR 1998
+                    per-channel spread cap, serendipity dial
+       shelves      Thompson sampling on shelf clicks .... Agrawal & Goyal 2012
+
+     Why this shape: title words alone can only ever find videos that share words with what
+     you watched, which drifts back to the same channels. The topic vectors generalise past
+     exact words ("rust borrow checker" ↔ "memory safety in C"), and the channel graph plus
+     the new-channel term push candidates out of the channel you are currently in. Nothing
+     leaves the browser: the index and the embeddings are built in the page (~0.5 s for
+     58,903 titles), and the ranker trains on your own history in ~30 ms.
+  */
+  let docs = [];
+  let postings = new Map();
+  let df = new Map();
+  let avgdl = 1;
+  const STOP = new Set(("a an and are as at be but by for from how i in into is it its of on or that "
+    + "the this to vs was what when where which why with you your we they he she his her them my me our "
+    + "new full video official trailer part ep episode vol").split(" "));
+
+  function titleTerms(title) {
+    const words = String(title).toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .split(/\s+/)
+      .filter(w => w.length > 1 && !STOP.has(w) && !/^\d{1,4}$/.test(w));
+    const out = [];
+    for (let i = 0; i < words.length; i++) {
+      out.push(words[i]);
+      if (i) out.push(words[i - 1] + " " + words[i]);
+    }
+    return out;
+  }
+
+  function buildIndex() {
+    if (docs.length) return;
+    docs = V.map(v => titleTerms(v.title));
+    const counts = new Map();
+    for (const terms of docs) for (const t of terms) counts.set(t, (counts.get(t) || 0) + 1);
+    for (const [term, n] of counts) {
+      if (n < 2 || n > 4000) continue; // unique terms can't link videos; ubiquitous ones carry no signal
+      df.set(term, n);
+      postings.set(term, []);
+    }
+    for (let i = 0; i < docs.length; i++) {
+      const used = new Set();
+      for (const t of docs[i]) {
+        if (used.has(t)) continue;
+        used.add(t);
+        const list = postings.get(t);
+        if (list) list.push(i);
+      }
+    }
+    let total = 0;
+    for (const terms of docs) total += terms.length;
+    avgdl = total / Math.max(1, docs.length);
+  }
+
+  /* ---------- topic vectors ----------
+     TF-IDF over the same title terms, projected down to 64 dimensions by signed random
+     projection: every term gets a deterministic ±1 pattern from its hash, so two titles
+     that share vocabulary land close together without ever building a co-occurrence
+     matrix. This is the Johnson–Lindenstrauss sketch / Random Indexing trick — O(nnz · d),
+     no SVD, incremental, and cosine similarity in the sketch approximates cosine in the
+     full term space. 64 dims keeps the whole library at ~15 MB of Float32. */
+  const EMB_D = 64;
+  let emb = null;       // Float32Array(V.length * EMB_D), unit rows
+  let chEmb = null;     // Float32Array(CH.length * EMB_D), unit rows (channel centroids)
+  let embBuilt = false;
+
+  function hash32(s) {
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+    return h >>> 0;
+  }
+
+  function buildEmbeddings() {
+    if (embBuilt) return;
+    buildIndex();
+    const n = V.length;
+    emb = new Float32Array(n * EMB_D);
+    for (let d = 0; d < n; d++) {
+      const terms = docs[d];
+      if (!terms || !terms.length) continue;
+      const counts = new Map();
+      for (const t of terms) counts.set(t, (counts.get(t) || 0) + 1);
+      const base = d * EMB_D;
+      let norm = 0;
+      const items = [];
+      for (const [t, c] of counts) {
+        const nq = df.get(t);
+        if (!nq) continue;
+        const idf = Math.log(1 + (n - nq + 0.5) / (nq + 0.5));
+        const w = (1 + Math.log(c)) * idf;
+        items.push([t, w]);
+        norm += w * w;
+      }
+      if (!norm) continue;
+      const inv = 1 / Math.sqrt(norm);
+      for (let j = 0; j < items.length; j++) {
+        const t = items[j][0], w = items[j][1] * inv;
+        let s = hash32(t) | 1;              // per-term seed, never 0
+        for (let k = 0; k < EMB_D; k++) {
+          s ^= s << 13; s ^= s >>> 17; s ^= s << 5; s >>>= 0;
+          emb[base + k] += (s & 1) ? w : -w;
+        }
+      }
+    }
+    // Rows come out near-unit already; normalise exactly so cosine is a plain dot product.
+    for (let d = 0; d < n; d++) {
+      const base = d * EMB_D;
+      let ss = 0;
+      for (let k = 0; k < EMB_D; k++) ss += emb[base + k] * emb[base + k];
+      if (ss > 1e-9) { const inv = 1 / Math.sqrt(ss); for (let k = 0; k < EMB_D; k++) emb[base + k] *= inv; }
+    }
+    chEmb = new Float32Array(CH.length * EMB_D);
+    for (let c = 0; c < CH.length; c++) {
+      const list = byChannel[c] || [];
+      const base = c * EMB_D;
+      for (const v of list) {
+        const b2 = v.ix * EMB_D;
+        for (let k = 0; k < EMB_D; k++) chEmb[base + k] += emb[b2 + k];
+      }
+      let ss = 0;
+      for (let k = 0; k < EMB_D; k++) ss += chEmb[base + k] * chEmb[base + k];
+      if (ss > 1e-9) { const inv = 1 / Math.sqrt(ss); for (let k = 0; k < EMB_D; k++) chEmb[base + k] *= inv; }
+    }
+    embBuilt = true;
+  }
+
+  // Channels whose topic centroids sit near this one — the graph that lets the feed leave a
+  // channel for a neighbour that publishes about the same things.
+  const _chNb = new Map();
+  function neighboursOfChannel(i, k = 8) {
+    buildEmbeddings();
+    let all = _chNb.get(i);
+    if (!all) {
+      all = [];
+      const b1 = i * EMB_D;
+      for (let c = 0; c < CH.length; c++) {
+        if (c === i) continue;
+        const b2 = c * EMB_D;
+        let s = 0;
+        for (let d = 0; d < EMB_D; d++) s += chEmb[b1 + d] * chEmb[b2 + d];
+        if (s > 0.06) all.push([c, s]);
+      }
+      all.sort((a, b) => b[1] - a[1]);
+      _chNb.set(i, all);
+    }
+    return k ? all.slice(0, k) : all;
+  }
+
+  /* ---------- feedback state ---------- */
+  let negIds = new Set(store.get("neg", []));           // "not interested" video ids
+  const saveNeg = () => store.set("neg", [...negIds]);
+  let ranker = store.get("ranker", null);               // { w: [..NF weights], pairs, at, loss }
+  let bandit = store.get("bandit", {});                 // shelf id -> { c: clicks, i: impressions }
+  const saveBandit = () => store.set("bandit", bandit);
+
+  let _profile = null, _profileKey = "";
+  let _sess = null, _sessKey = "";
+  const _why = new Map();                               // video id -> explanation for the current feed
+  const invalidateReco = () => { _profile = null; _sess = null; };
+
+  const SESSION_GAP = 30 * 60 * 1000;                   // 30 min of silence starts a new session
+
+  /* ---------- ranking model ----------
+     Ten features, all bounded to roughly 0..1 so one learned weight is comparable to
+     another. The defaults are the hand-tuned prior; `trainRanker` replaces them with
+     weights fitted to this user by pairwise BPR. */
+  const FEATURES = ["lexical", "semantic", "channel", "neighbours", "session",
+                    "popular", "rating", "duration", "newChannel", "negative"];
+  const NF = FEATURES.length;
+  const DEFAULT_W = { lexical: 1.00, semantic: 1.30, channel: 0.35, neighbours: 0.55,
+                      session: 0.90, popular: 0.12, rating: 0.30, duration: 0.12,
+                      newChannel: 0.30, negative: -2.00 };
+
+  function weightVector() {
+    const out = new Float32Array(NF);
+    const src = ranker && Array.isArray(ranker.w) && ranker.w.length === NF
+      ? ranker.w : FEATURES.map(f => DEFAULT_W[f]);
+    for (let i = 0; i < NF; i++) out[i] = src[i];
+    // The Tune knobs still apply on top of a learned model: affinity scales the channel
+    // feature, serendipity scales the new-channel feature.
+    out[2] *= reco.affinity / 60;
+    out[8] *= 0.4 + (reco.serendipity / 100) * 1.2;
+    return out;
+  }
+
+  const _f = new Float32Array(NF);
+  function lexFor(ix, p) {
+    const terms = docs[ix];
+    if (!terms || !terms.length) return 0;
+    const K1 = 1.2, B = 0.75, dl = terms.length;
+    let s = 0;
+    const done = new Set();
+    for (const t of terms) {
+      if (done.has(t)) continue;
+      done.add(t);
+      const qw = p.query.get(t);
+      if (!qw) continue;
+      const nq = df.get(t);
+      if (!nq) continue;
+      const idf = Math.log(1 + (V.length - nq + 0.5) / (nq + 0.5));
+      s += qw * idf * (K1 + 1) / (K1 * (1 - B + B * dl / avgdl) + 1);
+    }
+    return s;
+  }
+
+  /* Score = relevance × prior boost + small additive adjustments.
+     Relevance (lexical, semantic, session) decides *whether* a video is for you; channel
+     affinity, the topic graph and the new-channel push then amplify relevant videos instead
+     of giving every video in a channel you watch a floor it did not earn. The old additive
+     blend was why a chess search could surface a non-chess video from a favourite channel. */
+  function scoreFrom(f, w) {
+    const rel = f[0] * w[0] + f[1] * w[1] + f[4] * w[4];
+    const boost = 1 + f[2] * w[2] + f[3] * w[3] + f[8] * w[8];
+    return rel * boost + f[5] * w[5] + f[6] * w[6] + f[7] * w[7] + f[9] * w[9];
+  }
+
+  // d(score)/dw for the pairwise BPR update below — the product term makes this
+  // slightly more than "feature difference".
+  const _g = new Float32Array(NF);
+  function scoreGrad(f, w, out) {
+    const rel = f[0] * w[0] + f[1] * w[1] + f[4] * w[4];
+    const boost = 1 + f[2] * w[2] + f[3] * w[3] + f[8] * w[8];
+    out[0] = f[0] * boost; out[1] = f[1] * boost; out[4] = f[4] * boost;
+    out[2] = rel * f[2]; out[3] = rel * f[3]; out[8] = rel * f[8];
+    out[5] = f[5]; out[6] = f[6]; out[7] = f[7]; out[9] = f[9];
+    return out;
+  }
+
+  function featVec(ix, p, ctx, out) {
+    const v = V[ix];
+    const f = out || _f;
+    // log1p keeps order between two titles that both match the query hard (lx/1+lx
+    // would squash them to the same 1.0 and throw the BM25 differences away).
+    const lx = ctx.lex ? ctx.lex[ix] : lexFor(ix, p);
+    f[0] = lx > 0 ? Math.min(1, Math.log1p(lx) / 12) : 0;
+    let cos = 0;
+    if (p.vecLen) {
+      const b = ix * EMB_D;
+      for (let k = 0; k < EMB_D; k++) cos += p.vec[k] * emb[b + k];
+    }
+    f[1] = cos > 0 ? cos : 0;
+    f[2] = p.chAffN.get(v.ch) || 0;
+    f[3] = ctx.neigh ? (ctx.neigh.get(v.ch) || 0) : 0;
+    f[4] = ctx.sess ? (ctx.sess.get(ix) || 0) : 0;
+    f[5] = v.views ? Math.min(1, Math.log10(1 + v.views) / 8) : 0;
+    f[6] = rateFactor(v.ch) - 1;
+    f[7] = (ctx.dur && v.dur) ? Math.max(0, 1 - Math.abs(Math.log(v.dur / ctx.dur)) / 1.6) : 0.5;
+    f[8] = (p.chAff.size && !p.chAff.has(v.ch)) ? 1 : 0;
+    f[9] = negIds.has(v.id) ? 1 : 0;
+    return f;
+  }
+
+  /* ---------- profile = your taste, decayed ---------- */
+  function weightedMedianDur(pairs) {
+    if (!pairs.length) return 900;
+    pairs.sort((a, b) => a[0] - b[0]);
+    let total = 0;
+    for (const [, w] of pairs) total += w;
+    let run = 0;
+    for (const [d, w] of pairs) { run += w; if (run >= total / 2) return d; }
+    return pairs[pairs.length - 1][0];
+  }
+
+  function buildProfile(hist) {
+    buildEmbeddings();
+    const now = Date.now();
+    const vec = new Float32Array(EMB_D);
+    const query = new Map();
+    const chAff = new Map();
+    const seedByTerm = new Map();
+    const watched = new Set();
+    const durs = [];
+    const recent = hist.slice(-200);
+    for (const h of hist) { const v = byId.get(h.id); if (v) watched.add(v.id); }
+    // Newest first, so a term maps to the most recent video you watched that carries it.
+    for (let i = recent.length - 1; i >= 0; i--) {
+      const v = byId.get(recent[i].id);
+      if (!v) continue;
+      for (const t of docs[v.ix] || []) if (!seedByTerm.has(t)) seedByTerm.set(t, v);
+    }
+    for (const h of recent) {
+      const v = byId.get(h.id);
+      if (!v) continue;
+      const age = Math.max(0, (now - (h.t || now)) / 864e5);
+      const decay = Math.pow(0.5, age / Math.max(1, reco.halfLife));
+      const eng = typeof h.w === "number" ? h.w : 1;   // engagement: 0.3 for a quick exit, 1.4 for a full watch
+      const w = decay * eng;
+      if (w < 0.02) continue;
+      chAff.set(v.ch, (chAff.get(v.ch) || 0) + w);
+      for (const t of docs[v.ix] || []) query.set(t, (query.get(t) || 0) + w);
+      const b = v.ix * EMB_D;
+      for (let k = 0; k < EMB_D; k++) vec[k] += emb[b + k] * w;
+      if (v.dur) durs.push([v.dur, w]);
+    }
+    let vecLen = 0;
+    for (let k = 0; k < EMB_D; k++) vecLen += vec[k] * vec[k];
+    vecLen = Math.sqrt(vecLen);
+    if (vecLen > 1e-9) for (let k = 0; k < EMB_D; k++) vec[k] /= vecLen; else vecLen = 0;
+    let cmax = 1;
+    for (const n of chAff.values()) if (n > cmax) cmax = n;
+    const chAffN = new Map();
+    for (const [c, n] of chAff) chAffN.set(c, n / cmax);
+    const chTop = [...chAff.entries()].sort((a, b) => b[1] - a[1])
+      .slice(0, 8).map(([c, n]) => [c, n / cmax]);
+    return { vec, vecLen, query, chAff, chAffN, chTop, watched, seedByTerm,
+             prefDur: weightedMedianDur(durs), size: recent.length };
+  }
+
+  const historyKey = () => history.length + ":" + (history.length ? history[history.length - 1].t : 0)
+    + ":" + negIds.size + ":" + reco.halfLife;
+
+  function profile() {
+    const key = historyKey();
+    if (!_profile || _profileKey !== key) { _profile = buildProfile(history); _profileKey = key; }
+    return _profile;
+  }
+
+  /* ---------- session transitions (what usually follows what) ---------- */
+  function sessionTransitions() {
+    const key = history.length + ":" + (history.length ? history[history.length - 1].t : 0);
+    if (_sess && _sessKey === key) return _sess;
+    const trans = new Map();
+    let max = 1, last = [], prev = null;
+    for (const h of history) {
+      const v = byId.get(h.id);
+      if (!v) continue;
+      if (prev && (h.t || 0) - prev.t <= SESSION_GAP) {
+        let m = trans.get(prev.ix);
+        if (!m) trans.set(prev.ix, m = new Map());
+        const c = (m.get(v.ix) || 0) + 1;
+        m.set(v.ix, c);
+        if (c > max) max = c;
+      } else {
+        last = [];
+      }
+      last.push(v.ix);
+      prev = { ix: v.ix, t: h.t || 0 };
+    }
+    _sess = { trans, max, last: last.slice(-6) };
+    _sessKey = key;
+    return _sess;
+  }
+
+  /* ---------- candidate generation + ranking ---------- */
+  let _lex = null, _mask = null;
+  const _cand = [];
+
+  function rankHybrid(p, opts = {}) {
+    buildEmbeddings();
+    const n = V.length;
+    if (!_lex || _lex.length !== n) { _lex = new Float32Array(n); _mask = new Uint8Array(n); }
+    _lex.fill(0); _mask.fill(0);
+    const cand = _cand; cand.length = 0;
+    const mark = ix => { if (!_mask[ix]) { _mask[ix] = 1; cand.push(ix); } };
+
+    // 1 — lexical: BM25 postings for the profile's terms.
+    const K1 = 1.2, B = 0.75;
+    for (const [term, qw] of p.query) {
+      const list = postings.get(term);
+      if (!list) continue;
+      const nq = df.get(term) || 0;
+      const idf = Math.log(1 + (n - nq + 0.5) / (nq + 0.5));
+      const w = qw * idf;
+      for (let i = 0; i < list.length; i++) {
+        const d = list[i];
+        const dl = docs[d].length || 1;
+        _lex[d] += w * (K1 + 1) / (K1 * (1 - B + B * dl / avgdl) + 1);
+      }
+    }
+    for (let d = 0; d < n; d++) if (_lex[d] > 0) mark(d);
+
+    // 2 — semantic: the nearest titles in topic-vector space, regardless of shared words.
+    if (p.vecLen) {
+      const top = [];
+      for (let d = 0; d < n; d++) {
+        const b = d * EMB_D;
+        let s = 0;
+        for (let k = 0; k < EMB_D; k++) s += p.vec[k] * emb[b + k];
+        if (s > 0.05) top.push([d, s]);
+      }
+      top.sort((a, b) => b[1] - a[1]);
+      const keep = Math.min(top.length, 2400);
+      for (let i = 0; i < keep; i++) mark(top[i][0]);
+    }
+
+    // 3 — your favourite channels themselves: the next thing from a channel you watch.
+    for (const [ch] of p.chTop) for (const v of byChannel[ch] || []) mark(v.ix);
+
+    // 3b — channel topic graph: everything published by channels next to your favourites.
+    const neigh = new Map();
+    for (const [ch, w] of p.chTop) {
+      for (const [nb, s] of neighboursOfChannel(ch, 8)) {
+        neigh.set(nb, Math.max(neigh.get(nb) || 0, s * w));
+      }
+    }
+    for (const ch of neigh.keys()) for (const v of byChannel[ch] || []) mark(v.ix);
+
+    // 4 — session: what tended to follow what you just watched.
+    const st = sessionTransitions();
+    const sess = new Map();
+    for (const a of st.last) {
+      const m = st.trans.get(a);
+      if (!m) continue;
+      for (const [b, c] of m) sess.set(b, Math.max(sess.get(b) || 0, Math.min(1, c / st.max)));
+    }
+    for (const ix of sess.keys()) mark(ix);
+
+    const ctx = { lex: _lex, neigh, sess, dur: p.prefDur };
+    const w = opts.weights || weightVector();
+    const allow = opts.allowSet || null;
+    const exclude = opts.exclude || null;
+    const out = [];
+    for (let i = 0; i < cand.length; i++) {
+      const ix = cand[i];
+      const v = V[ix];
+      if (vOff(v)) continue;
+      if (allow && !allow.has(v.ch)) continue;
+      if (exclude && exclude.has(v.id)) continue;
+      const f = featVec(ix, p, ctx, _f);
+      let sc = scoreFrom(f, w);
+      if (p.watched.has(v.id)) sc *= reco.watched / 100;
+      out.push({ ix, v, s: sc });
+    }
+    out.sort((a, b) => b.s - a.s);
+    return out.slice(0, opts.limit || 900);
+  }
+
+  /* ---------- re-ranking: MMR + a channel spread cap ----------
+     MMR trades a little relevance for variety (Carbonell & Goldstein). The cap stops one
+     prolific channel from filling the head of the feed; serendipity sets both how hard the
+     diversity term pulls and how tight the cap is. Similarity is approximated against the
+     last 6 picks rather than all of them, which is the usual O(k) shortcut. */
+  function diversify(ranked, head = 90) {
+    if (!ranked.length) return ranked;
+    const lam = 1 - (reco.serendipity / 100) * 0.55;
+    const cap = reco.serendipity > 66 ? 1 : reco.serendipity > 33 ? 2 : 3;
+    const pool = ranked.slice(0, Math.min(ranked.length, 240));
+    const rest = ranked.slice(pool.length);
+    const picked = [];
+    const perCh = new Map();
+    while (picked.length < head && pool.length) {
+      let bi = -1, bs = -Infinity, fi = -1, fs = -Infinity;
+      const from = Math.max(0, picked.length - 6);
+      for (let i = 0; i < pool.length; i++) {
+        const c = pool[i];
+        let sim = 0;
+        if (picked.length) {
+          const b1 = c.ix * EMB_D;
+          for (let j = from; j < picked.length; j++) {
+            const b2 = picked[j].ix * EMB_D;
+            let d = 0;
+            for (let k = 0; k < EMB_D; k++) d += emb[b1 + k] * emb[b2 + k];
+            if (d > sim) sim = d;
+          }
+        }
+        const val = lam * c.s - (1 - lam) * sim;
+        if (val > fs) { fs = val; fi = i; }
+        if ((perCh.get(c.v.ch) || 0) >= cap) continue;
+        if (val > bs) { bs = val; bi = i; }
+      }
+      const take = bi >= 0 ? bi : fi;
+      if (take < 0) break;
+      const c = pool.splice(take, 1)[0];
+      picked.push(c);
+      perCh.set(c.v.ch, (perCh.get(c.v.ch) || 0) + 1);
+    }
+    return picked.concat(pool, rest);
+  }
+
+  /* ---------- explanations ---------- */
+  const shortTitle = t => t.length > 46 ? t.slice(0, 46).trimEnd() + "…" : t;
+
+  function explain(ix, p) {
+    const v = V[ix];
+    const terms = docs[ix] || [];
+    const scored = [];
+    for (const t of terms) {
+      const qw = p.query.get(t);
+      if (!qw) continue;
+      const nq = df.get(t);
+      if (!nq) continue;
+      scored.push([t, qw * Math.log(1 + (V.length - nq + 0.5) / (nq + 0.5))]);
+    }
+    scored.sort((a, b) => b[1] - a[1]);
+    const top = scored.slice(0, 3).map(x => x[0]);
+    const seed = top.length ? p.seedByTerm.get(top[0]) : null;
+    const bits = [];
+    if (seed && seed.ch !== v.ch) bits.push(`because you watched “${shortTitle(seed.title)}”`);
+    else if (top.length >= 2) bits.push(`matches “${top[0]}” + “${top[1]}”`);
+    else if (top.length) bits.push(`matches “${top[0]}”`);
+    if (p.chAff.size && !p.chAff.has(v.ch)) bits.push(`channel you haven't watched`);
+    else if (bits.length) bits.push("from your usual channels");
+    return bits.join(" · ") || "popular in your library";
+  }
+
+  function whyFor(id) { return _why.get(id) || ""; }
+
+  /* ---------- the feed ---------- */
+  function forYou(chs) {
+    if (!chs.length) return [];
+    const p = profile();
+    const pool = chs.flatMap(c => byChannel[c.i]).filter(v => !vOff(v));
+    if (!p.size) return shuffle(pool);
+    const allow = chs.length === CH.length ? null : new Set(chs.map(c => c.i));
+    const ranked = diversify(rankHybrid(p, { allowSet: allow, limit: 900 }), 90);
+    for (let i = 0; i < Math.min(ranked.length, 120); i++) {
+      _why.set(ranked[i].v.id, explain(ranked[i].ix, p));
+    }
+    const out = ranked.map(r => r.v);
+    const have = new Set(out.map(v => v.id));
+    for (const v of pool) if (!have.has(v.id)) out.push(v);   // never let infinite scroll dead-end
+    return out;
+  }
+
+  // Nearest titles in topic space, optionally forcing videos from *other* channels.
+  function nearestTo(seedIx, n = 12, opts = {}) {
+    buildEmbeddings();
+    const base = seedIx * EMB_D;
+    const out = [];
+    for (let d = 0; d < V.length; d++) {
+      if (d === seedIx) continue;
+      const v = V[d];
+      if (opts.avoidChannel != null && v.ch === opts.avoidChannel) continue;
+      if (opts.exclude && opts.exclude.has(v.id)) continue;
+      if (vOff(v) || negIds.has(v.id)) continue;
+      const b = d * EMB_D;
+      let s = 0;
+      for (let k = 0; k < EMB_D; k++) s += emb[base + k] * emb[b + k];
+      if (s <= 0.02) continue;
+      out.push({ ix: d, v, s: s * rateFactor(v.ch) * (opts.ignoreWatched ? 1 : (watchedSet().has(v.id) ? 0.35 : 1)) });
+    }
+    out.sort((a, b) => b.s - a.s);
+    return out.slice(0, n);
+  }
+
+  function similarTo(v, n = 15) {
+    if (!v) return [];
+    const p = profile();
+    const ranked = rankHybrid(p, { exclude: new Set([v.id]), limit: 400 });
+    // Seed the ranking with the video itself so "up next" never drifts off-topic.
+    if (v.ix != null) {
+      const seedRank = nearestTo(v.ix, 40).map(r => ({ ...r }));
+      const seenIx = new Set(ranked.map(r => r.ix));
+      for (const r of seedRank) if (!seenIx.has(r.ix)) ranked.push({ ix: r.ix, v: r.v, s: r.s });
+    }
+    const mixed = diversify(ranked, 70).map(r => r.v);
+    // Up next on a watch page wants the creator you are already watching first, then
+    // branches out — the opposite of the home shelves, which deliberately leave the channel.
+    const sameCap = Math.max(2, Math.round(n * 0.4));
+    const same = mixed.filter(x => x.ch === v.ch).slice(0, sameCap);
+    const rest = mixed.filter(x => x.ch !== v.ch);
+    const out = [];
+    let si = 0, ri = 0;
+    while (out.length < n && (si < same.length || ri < rest.length)) {
+      if (si < same.length && out.length % 3 === 0) out.push(same[si++]);
+      else if (ri < rest.length) out.push(rest[ri++]);
+      else out.push(same[si++]);
+    }
+    if (out.length >= n) return out.slice(0, n);
+    const have = new Set([v.id, ...out.map(x => x.id)]);
+    const fill = V.filter(x => !have.has(x.id) && !vOff(x)).sort((a, b) => (b.views || 0) - (a.views || 0));
+    for (const x of fill) { if (out.length >= n) break; out.push(x); }
+    return out.slice(0, n);
+  }
+
+  /* ---------- home shelves ----------
+     Four generators, each answering a different question. Every shelf's streak of clicks
+     is fed back into a Thompson sampler, so the row order follows what you actually open
+     instead of a hard-coded priority. */
+  function homeShelves(chFilter) {
+    if (chFilter != null) return [];
+    const p = profile();
+    if (!p.size) return [];
+    const used = new Set();
+    const take = (rows, n) => {
+      const out = [];
+      for (const r of rows) {
+        const id = r.v.id;
+        if (used.has(id)) continue;
+        used.add(id);
+        out.push(r.v);
+        if (out.length >= n) break;
+      }
+      return out;
+    };
+    const shelves = [];
+
+    // 1 — "Because you watched X", deliberately from other channels.
+    const seeds = [];
+    for (let i = history.length - 1; i >= 0 && seeds.length < 2; i--) {
+      const v = byId.get(history[i].id);
+      if (!v || vOff(v)) continue;
+      if (seeds.some(s => s.ch === v.ch)) continue;
+      seeds.push(v);
+    }
+    for (const seed of seeds) {
+      const rows = nearestTo(seed.ix, 14, { avoidChannel: seed.ch });
+      const items = take(rows, 10);
+      if (items.length >= 5) {
+        shelves.push({
+          id: "because:" + seed.id,
+          title: `Because you watched ${shortTitle(seed.title)}`,
+          note: "similar videos from other channels",
+          items,
+        });
+      }
+    }
+
+    // 2 — "New to you": strong candidates from channels with no watch history at all.
+    const ranked = rankHybrid(p, { limit: 600 });
+    const fresh = ranked.filter(r => p.chAff.size && !p.chAff.has(r.v.ch));
+    const newItems = take(fresh, 12);
+    if (newItems.length >= 5) {
+      shelves.push({ id: "new-to-you", title: "New to you", note: "channels you haven't watched yet", items: newItems });
+    }
+
+    // 3 — "Continue this thread": the session's own transition model.
+    const st = sessionTransitions();
+    if (st.last.length >= 2) {
+      const sessRows = [];
+      for (const a of st.last) {
+        const m = st.trans.get(a);
+        if (!m) continue;
+        for (const [b, c] of m) if (!used.has(V[b].id)) sessRows.push({ ix: b, v: V[b], s: c / st.max });
+      }
+      sessRows.sort((a, b) => b.s - a.s);
+      const items = take(sessRows, 10);
+      if (items.length >= 3) {
+        shelves.push({ id: "thread", title: "Continue this thread", note: "what usually follows what you just watched", items });
+      }
+    }
+
+    // 4 — "More from channels like X": the channel topic graph, not your history.
+    if (p.chTop.length) {
+      const topCh = p.chTop[0][0];
+      const lists = [];
+      for (const [nb, s] of neighboursOfChannel(topCh, 8)) {
+        const arr = (byChannel[nb] || [])
+          .filter(v => !used.has(v.id) && !vOff(v) && !negIds.has(v.id))
+          .sort((a, b) => (b.views || 0) - (a.views || 0))
+          .slice(0, 3);
+        if (arr.length) lists.push({ s: s * rateFactor(nb), arr });
+      }
+      lists.sort((a, b) => b.s - a.s);
+      // Round-robin across neighbours so a single channel cannot fill the shelf.
+      const rows = [];
+      for (let round = 0; round < 3; round++) {
+        for (const l of lists) if (l.arr[round]) rows.push({ v: l.arr[round], s: l.s });
+      }
+      const items = take(rows, 10);
+      if (items.length >= 5) {
+        shelves.push({
+          id: "neighbours:" + topCh,
+          title: `More like ${CH[topCh].name}`,
+          note: "channels that publish about the same things",
+          items,
+        });
+      }
+    }
+
+    // 5 — "Deep cuts": relevant but under-watched, which the popularity term normally buries.
+    if (history.length >= 5) {
+      const cuts = ranked
+        .filter(r => (r.v.views || 0) > 0 && (r.v.views || 0) < 60000 && !used.has(r.v.id))
+        .slice(0, 40);
+      const items = take(cuts, 10);
+      if (items.length >= 5) shelves.push({ id: "deep-cuts", title: "Deep cuts", note: "relevant, but not the famous ones", items });
+    }
+
+    for (const s of shelves) for (const v of s.items) if (v.ix != null) _why.set(v.id, explain(v.ix, p));
+    return orderShelves(shelves);
+  }
+
+  /* ---------- Thompson sampling over shelf order ---------- */
+  function randn() {
+    let u = 0, v = 0;
+    while (!u) u = Math.random();
+    while (!v) v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+  function gammaSample(k) {
+    if (k < 1) return gammaSample(1 + k) * Math.pow(Math.random(), 1 / k);
+    const d = k - 1 / 3, c = 1 / Math.sqrt(9 * d);
+    for (;;) {
+      let x, v;
+      do { x = randn(); v = 1 + c * x; } while (v <= 0);
+      v = v * v * v;
+      const u = Math.random();
+      if (u < 1 - 0.0331 * x * x * x * x) return d * v;
+      if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v;
+    }
+  }
+  const betaSample = (a, b) => { const x = gammaSample(a), y = gammaSample(b); return x / (x + y); };
+
+  function orderShelves(list) {
+    list.forEach((s, idx) => {
+      const b = bandit[s.id] || { c: 0, i: 0 };
+      // Cold start keeps the curated order; after a few impressions the sampler takes over.
+      s.sample = b.i < 4 ? 1 - idx * 0.01 : betaSample(b.c + 1, b.i - b.c + 1);
+    });
+    return list.slice().sort((a, b) => b.sample - a.sample);
+  }
+  function shelfImpression(id) {
+    const b = bandit[id] || (bandit[id] = { c: 0, i: 0 });
+    b.i++;
+    saveBandit();
+  }
+  function shelfClick(id) {
+    const b = bandit[id] || (bandit[id] = { c: 0, i: 0 });
+    b.c++;
+    b.i++;
+    saveBandit();
+  }
+
+  /* ---------- on-device learning: pairwise BPR ----------
+     Rendle et al.'s Bayesian Personalised Ranking: for each video you actually watched,
+     sample an unwatched one and nudge the weights until the watched one scores higher.
+     No labels to provide, no model file, ~30 ms on a few hundred pairs. */
+  const _fp = new Float32Array(NF), _fn = new Float32Array(NF);
+  const _gp = new Float32Array(NF), _gn = new Float32Array(NF);
+  function trainRanker() {
+    buildEmbeddings();
+    const pos = [];
+    for (const h of history) {
+      const v = byId.get(h.id);
+      if (!v || negIds.has(v.id)) continue;
+      if (typeof h.w === "number" && h.w < 0.45) continue;  // quick exits are not positives
+      pos.push(v.ix);
+    }
+    if (pos.length < 8) return { ok: false, msg: "Watch at least 8 videos first — the ranker needs examples." };
+    const p = profile();
+    const ctx = { lex: null, neigh: new Map(), sess: new Map(), dur: p.prefDur };
+    const st = sessionTransitions();
+    for (const a of st.last) {
+      const m = st.trans.get(a);
+      if (m) for (const [b, c] of m) ctx.sess.set(b, Math.min(1, c / st.max));
+    }
+    for (const [ch, w] of p.chTop) for (const [nb, s] of neighboursOfChannel(ch, 8)) ctx.neigh.set(nb, Math.max(ctx.neigh.get(nb) || 0, s * w));
+
+    let seed = 0x9e3779b9 ^ history.length;
+    const rnd = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; seed >>>= 0; return seed / 4294967296; };
+    // Hard negatives: half sampled from channels you already watch (so the model cannot
+    // learn "a new channel is always bad" — the usual exposure bias), half uniform.
+    const negatives = [];
+    const want = Math.max(24, pos.length * 4);
+    const hotCh = p.chTop.map(x => x[0]);
+    for (let guard = 0; negatives.length < want && guard < want * 80; guard++) {
+      let v;
+      if (hotCh.length && rnd() < 0.5) {
+        const arr = byChannel[hotCh[(rnd() * hotCh.length) | 0]] || [];
+        if (!arr.length) continue;
+        v = arr[(rnd() * arr.length) | 0];
+      } else {
+        v = V[(rnd() * V.length) | 0];
+      }
+      if (!v || p.watched.has(v.id) || negIds.has(v.id)) continue;
+      negatives.push(v.ix);
+    }
+    const w = new Float32Array(FEATURES.map(f => DEFAULT_W[f]));
+    const lr = 0.03, l2 = 0.002;
+    let loss = 0, steps = 0;
+    for (let epoch = 0; epoch < 40; epoch++) {
+      for (const a of pos) {
+        const b = negatives[(rnd() * negatives.length) | 0];
+        if (b == null) continue;
+        featVec(a, p, ctx, _fp);
+        featVec(b, p, ctx, _fn);
+        const x = scoreFrom(_fp, w) - scoreFrom(_fn, w);
+        const g = 1 / (1 + Math.exp(Math.max(-30, Math.min(30, x))));   // sigmoid(-x)
+        loss += Math.log(1 + Math.exp(-Math.max(-30, Math.min(30, x))));
+        scoreGrad(_fp, w, _gp); scoreGrad(_fn, w, _gn);
+        for (let k = 0; k < NF; k++) {
+          w[k] += lr * (g * (_gp[k] - _gn[k]) - l2 * w[k]);
+          if (w[k] > 3) w[k] = 3; else if (w[k] < -3) w[k] = -3;
+        }
+        steps++;
+      }
+    }
+    // One user is a tiny training set, so shrink toward the hand-tuned prior instead of
+    // trusting weights fitted on a few hundred pairs. Exploration stays a policy, not a
+    // preference: the exposure bias of "you have only watched 8 of 1,427 channels" must not
+    // teach the model that new channels are bad.
+    for (let k = 0; k < NF; k++) w[k] = 0.65 * w[k] + 0.35 * DEFAULT_W[FEATURES[k]];
+    w[FEATURES.indexOf("newChannel")] = DEFAULT_W.newChannel;
+    ranker = { w: Array.from(w), pairs: steps, at: Date.now(), loss: +(loss / Math.max(1, steps)).toFixed(4) };
+    store.set("ranker", ranker);
+    invalidateReco();
+    return { ok: true, ...ranker };
+  }
+
+  function resetRanker() {
+    ranker = null;
+    try { localStorage.removeItem("mytube-ranker"); } catch {}
+    invalidateReco();
+  }
+
+  /* ---------- offline evaluation (Recs Lab) ----------
+     A temporal hold-out: train on everything before the cut, then replay the last few
+     watches and measure where the engine would have put them. Recall@10, NDCG@10, MRR,
+     plus catalogue coverage and intra-list diversity, for the BM25-only baseline and the
+     hybrid model, so the improvement is a number and not a claim. */
+  const BASE_W = new Float32Array(NF);
+  BASE_W[0] = 1;
+
+  function evaluateEngine(sample = 12) {
+    buildEmbeddings();
+    const hist = history.filter(h => byId.has(h.id)).slice().sort((a, b) => (a.t || 0) - (b.t || 0));
+    if (hist.length < 12) return { ok: false, msg: "Watch at least 12 videos to get a meaningful evaluation." };
+    const cut = Math.max(6, Math.floor(hist.length * 0.8));
+    const train = hist.slice(0, cut);
+    let test = hist.slice(cut);
+    if (test.length > sample) test = test.slice(-sample);
+    const run = weights => {
+      let hit = 0, ndcg = 0, mrr = 0, cov = 0, ild = 0, n = 0, candHit = 0;
+      for (let i = 0; i < test.length; i++) {
+        const prior = train.concat(test.slice(0, i));
+        if (!prior.length) continue;
+        const p = buildProfile(prior);
+        const tv = byId.get(test[i].id);
+        const raw = rankHybrid(p, { weights, limit: 600 });
+        if (tv && _mask[tv.ix]) candHit++;   // was the right answer even in the pool?
+        // Relevance is measured on the ranked list; coverage and diversity on the re-ranked
+        // feed, because MMR deliberately trades relevance for variety.
+        const rank = raw.findIndex(r => r.v.id === test[i].id);
+        if (rank >= 0 && rank < 10) { hit++; ndcg += 1 / Math.log2(rank + 2); mrr += 1 / (rank + 1); }
+        const head = diversify(raw, 50).slice(0, 50);
+        cov += new Set(head.map(r => r.v.ch)).size / Math.max(1, CH.length);
+        let sim = 0, pairs = 0;
+        for (let a = 0; a < Math.min(20, head.length); a++) {
+          for (let b = a + 1; b < Math.min(20, head.length); b++) {
+            const x = head[a].ix * EMB_D, y = head[b].ix * EMB_D;
+            let s = 0;
+            for (let k = 0; k < EMB_D; k++) s += emb[x + k] * emb[y + k];
+            sim += Math.max(0, Math.min(1, 1 - s)); pairs++;
+          }
+        }
+        ild += pairs ? sim / pairs : 0;
+        n++;
+      }
+      return n ? { recall: hit / n, ndcg: ndcg / n, mrr: mrr / n, coverage: cov / n,
+        ild: ild / n, candRecall: candHit / n, n } : null;
+    };
+    const base = run(BASE_W);
+    const hybrid = run(weightVector());
+    return { ok: true, base, hybrid, tested: test.length, trained: train.length };
+  }
+
+  /* ---------- engagement ---------- */
+  function remember(v, weight) {
+    history = history.filter(h => h.id !== v.id);
+    history.push({ id: v.id, ch: v.ch, t: Date.now(), w: weight == null ? 1 : weight });
+    if (history.length > 800) history = history.slice(-800);
+    store.set("history", history);
+    invalidateWatched();
+    invalidateReco();
+  }
+
+  // Called when you leave a video: how much of it you actually watched becomes the weight
+  // this watch carries in every future ranking (0.3 for a quick exit, 1.4 for the end).
+  function rememberEngagement(id, seconds, ended) {
+    let idx = -1;
+    for (let i = history.length - 1; i >= 0; i--) if (history[i].id === id) { idx = i; break; }
+    if (idx < 0) return;
+    const h = history[idx];
+    const w = ended ? 1.4 : Math.min(1.3, Math.max(0.3, (seconds || 0) / 120));
+    if (Math.abs((h.w || 1) - w) < 0.05) return;
+    h.w = +w.toFixed(2);
+    store.set("history", history);
+    invalidateReco();
+  }
+
+  function markNotInterested(v) {
+    const had = negIds.has(v.id);
+    if (had) negIds.delete(v.id); else negIds.add(v.id);
+    saveNeg();
+    invalidateReco();
+    if (!had) {
+      toast(`Not interested in “${shortTitle(v.title)}” — it will sink in your feed.`, "Undo", () => {
+        negIds.delete(v.id); saveNeg(); invalidateReco(); route();
+      });
+    } else toast("That video can show up again.");
+  }
+
+  /* ---------- categories ----------
+     A shallow Rocchio-style text classifier: a weighted keyword lexicon scored over each
+     channel's name, description and up to 30 recent titles. Term weights are multiplied
+     by inverse library frequency (so "engineering", present in 300 channels, counts for
+     little and a specific term counts for a lot), title and name hits count double, and
+     scores are length-normalised so a long description can't win on volume. Terms used by
+     more than a third of the library are dropped as signal-free, and a channel whose best
+     score is under 0.33 falls back to "Uncategorised".
+
+     Options weighed: sentence embeddings or an LLM would separate topics better, but both
+     need a model download or an API key and this page has to stay one offline file; k-means
+     over TF-IDF was the other candidate (implemented in open toolkits as spherical k-means),
+     but its clusters come out unnamed, which is worse for browsing. A lexicon + idf
+     weighting is the readable middle ground: every bucket has a name, and every assignment
+     can be explained by which terms matched. */
+  const CATS =   [
+    { id: "inventions", name: "Inventions & Making", terms: {
+      invention: 3, inventions: 3, inventor: 3, prototype: 3, gadget: 3, contraption: 3,
+      "3d print": 3, "3d printer": 3, "3d printing": 3, arduino: 3, esp32: 3, raspberry: 2,
+      microcontroller: 3, electronics: 2, robot: 2, robotics: 2, cnc: 3, welding: 2, hydraulic: 3,
+      drone: 2, drones: 2, fpv: 3, quadcopter: 3, "rc car": 3, servos: 2, teardown: 2,
+      pneumatic: 3, machinist: 3, lathe: 3, "design and build": 3, "how i built": 3, maker: 2,
+      makers: 2, fabrication: 3, workshop: 2, gears: 2, mechanism: 2, "custom build": 3,
+      "shop project": 2, "engineering project": 3, "solenoid": 2, "servo": 2, "cad": 2 } },
+    { id: "space", name: "Space & Astronomy", terms: {
+      nasa: 3, spacex: 3, astronomy: 3, astrophysics: 3, "deep space": 3, exoplanet: 3,
+      "black hole": 3, "black holes": 3, galaxy: 2, galaxies: 2, cosmology: 3, telescope: 3,
+      orbit: 2, satellite: 2, rocket: 2, mars: 2, jupiter: 2, saturn: 2, nebula: 3, supernova: 3,
+      interstellar: 2, "space station": 3, hubble: 3, jwst: 3, "james webb": 3, cosmos: 2,
+      astronaut: 2, spaceflight: 3, wormhole: 3, "dark matter": 3, "dark energy": 3,
+      "solar system": 3, asteroid: 2, asteroids: 2, cosmic: 2, pulsar: 3, quasar: 3,
+      "milky way": 3, "kuiper": 2, "spacecraft": 2, "launch": 1 } },
+    { id: "ai", name: "AI & Machine Learning", terms: {
+      "machine learning": 3, "deep learning": 3, "neural network": 3, "neural networks": 3, llm: 3,
+      llms: 3, "language model": 3, "language models": 3, transformer: 2, openai: 2, pytorch: 3,
+      tensorflow: 3, "artificial intelligence": 3, "diffusion model": 3, "fine-tuning": 3,
+      embeddings: 2, chatgpt: 2, "prompt engineering": 3, huggingface: 3, "vector database": 3,
+      "reinforcement learning": 3, "mixture of experts": 3, "inference": 2, "gpt": 2, "claude": 2,
+      "gemini": 1, "agents": 1, "rag": 2, "cuda": 2, "training data": 2 } },
+    { id: "code", name: "Programming & Software", terms: {
+      programming: 3, "software engineer": 3, javascript: 3, typescript: 3, python: 2, rust: 2,
+      golang: 3, compiler: 3, "data structures": 3, leetcode: 3, refactor: 3, coding: 3,
+      webdev: 3, react: 2, "node.js": 2, github: 2, docker: 2, kubernetes: 3, vim: 2, neovim: 3,
+      "clean code": 3, backend: 2, frontend: 2, devops: 2, "system design": 3, debugging: 2,
+      postgres: 2, "web development": 3, "full stack": 3, programmer: 3, "api": 1, "sql": 1,
+      "java": 2, "c++": 2, "css": 2, "html": 2, "framework": 1, "repository": 1,
+      cybersecurity: 3, hacking: 2, malware: 3, ransomware: 3, "penetration testing": 3,
+      tryhackme: 3, hackthebox: 3, ctf: 3, vulnerability: 2, exploit: 2, infosec: 3,
+      "retro computing": 3, commodore: 3, amiga: 3, "assembly": 1 } },
+    { id: "science", name: "Science & Maths", terms: {
+      physics: 3, chemistry: 3, mathematics: 3, calculus: 3, theorem: 2, quantum: 2, relativity: 2,
+      particle: 2, thermodynamics: 3, electromagnetism: 3, "organic chemistry": 3, biology: 2,
+      neuroscience: 3, genetics: 2, microbiology: 3, "linear algebra": 3, "number theory": 3,
+      topology: 3, molecule: 2, molecules: 2, protein: 2, dna: 2, entropy: 3, "periodic table": 3,
+      "magnetism": 2, "optics": 2, "laboratory": 2, "experiment": 1, "scientist": 2,
+      "mathematician": 3, "physicist": 3, "chemist": 3, "hypothesis": 2, "mitochondria": 3 } },
+    { id: "engineering", name: "Engineering & Infrastructure", terms: {
+      "civil engineering": 3, "mechanical engineering": 3, structural: 2, bridge: 2, concrete: 2,
+      turbine: 3, aerodynamics: 3, manufacturing: 2, megaproject: 3, "power grid": 3,
+      "nuclear plant": 3, "dam": 2, "tunnel": 2, "infrastructure": 2, "high voltage": 3,
+      hydropower: 3, "cooling tower": 3, "mine": 1, "mining": 2, "pipeline": 2, "refinery": 3,
+      "engineering": 1, "engineers": 2, "factory": 2, "construction": 2, "materials science": 3 } },
+    { id: "diy", name: "DIY & Crafts", terms: {
+      woodworking: 3, carpentry: 3, handmade: 3, crafts: 2, sewing: 3, knitting: 3, crochet: 3,
+      pottery: 3, ceramics: 2, upcycle: 3, "furniture build": 3, "knife making": 3, leatherwork: 3,
+      cosplay: 3, diorama: 3, miniatures: 2, origami: 3, "wood": 1, "resin": 2, "restoration": 2,
+      "garden": 1, "renovation": 2, "homestead": 2 } },
+    { id: "art", name: "Art, Design & Animation", terms: {
+      "graphic design": 3, illustrator: 2, typography: 3, "ui design": 3, figma: 3, blender: 2,
+      "concept art": 3, drawing: 2, painting: 2, sketchbook: 3, animation: 2, animator: 3,
+      "motion design": 3, illustration: 3, "watercolor": 3, "comic": 2, "sculpture": 2,
+      "digital art": 3, "art history": 3, "gallery": 1, "logo": 2, "3d art": 3, "procreate": 3,
+      "photoshop": 1, "designer": 1, "art": 1 } },
+    { id: "music", name: "Music & Audio", terms: {
+      guitar: 3, piano: 3, producer: 2, beats: 2, album: 2, mixing: 2, mastering: 3, synth: 2,
+      synthesizer: 3, "drum": 2, drums: 2, melody: 2, chords: 2, vinyl: 2, lofi: 3,
+      "music theory": 3, ableton: 3, "fl studio": 3, songwriting: 3, "cover song": 3,
+      "bass": 2, "vocals": 2, "concert": 1, "band": 1, "orchestra": 2, "music": 2 } },
+    { id: "film", name: "Film & Video", terms: {
+      filmmaking: 3, cinematography: 3, "short film": 3, documentary: 2, screenplay: 3,
+      "color grading": 3, filmmaker: 3, "behind the scenes": 2, vfx: 3, "visual effects": 3,
+      "cinema": 2, "film": 1, "director": 1, "screenplay": 3, "sound design": 3, "gimbal": 2,
+      "anamorphic": 3, "shots": 1 } },
+    { id: "gaming", name: "Gaming", terms: {
+      gameplay: 3, minecraft: 3, speedrun: 3, playstation: 3, xbox: 3, esports: 3, "game dev": 3,
+      gamedev: 3, "video game": 2, "video games": 2, "boss fight": 3, "let's play": 3,
+      roguelike: 3, "unreal engine": 2, "unity": 1, "steam": 1, "rpg": 2, "fps": 2, "nintendo": 2,
+      "gamer": 2, "walkthrough": 2, "mod": 1, "speedrunner": 3 } },
+    { id: "finance", name: "Money & Investing", terms: {
+      investing: 3, stocks: 3, portfolio: 2, trading: 3, crypto: 3, bitcoin: 3, ethereum: 2,
+      dividend: 3, "index fund": 3, "real estate": 2, "federal reserve": 3, inflation: 2,
+      "financial independence": 3, "personal finance": 3, retirement: 2, "hedge fund": 3,
+      valuation: 2, "compound interest": 3, "net worth": 3, "401k": 3, "mutual fund": 3,
+      "investor": 2, "stock market": 3 } },
+    { id: "business", name: "Business & Marketing", terms: {
+      startup: 3, startups: 3, entrepreneur: 3, saas: 3, "venture capital": 3,
+      "product management": 3, freelancing: 2, ecommerce: 3, dropshipping: 3, "b2b": 2,
+      "growth marketing": 3, "founder": 2, "acquisition": 2, "pricing": 1, "customers": 1,
+      "business": 1, "marketing": 2, "sales": 1, "ceo": 1, "brand": 1 } },
+    { id: "productivity", name: "Productivity & Systems", terms: {
+      productivity: 3, "note-taking": 3, obsidian: 3, notion: 2, "second brain": 3, habits: 2,
+      "time management": 3, "deep work": 3, "planner": 2, "task management": 3, "workflow": 1,
+      "zettelkasten": 3, "goals": 1, "focus": 1 } },
+    { id: "mind", name: "Psychology & Self-improvement", terms: {
+      psychology: 3, discipline: 3, mindset: 3, "mental health": 3, anxiety: 2, meditation: 2,
+      stoicism: 3, stoic: 2, "self improvement": 3, "self-improvement": 3, trauma: 2, cbt: 3,
+      psychologist: 3, "cognitive": 2, "emotions": 1, "happiness": 2, "confidence": 1,
+      "subconscious": 2, "attachment": 1 } },
+    { id: "fitness", name: "Health & Fitness", terms: {
+      fitness: 3, workout: 3, muscle: 2, gym: 2, nutrition: 3, diet: 2, protein: 2, marathon: 3,
+      yoga: 3, longevity: 3, calisthenics: 3, bodybuilding: 3, "weight loss": 3, mobility: 3,
+      physio: 2, cardio: 2, "hypertrophy": 3, "bodyweight": 3, "supplements": 2, "recovery": 1,
+      "blood sugar": 2, "insulin": 2, doctor: 1, medicine: 2, patient: 2, patients: 2,
+      clinical: 2, surgery: 3, disease: 2, cancer: 3, vaccine: 3, "medical school": 3 } },
+    { id: "food", name: "Food & Cooking", terms: {
+      recipe: 3, recipes: 3, cooking: 3, chef: 3, baking: 3, kitchen: 2, cuisine: 3, meal: 2,
+      sauce: 2, dough: 2, bread: 2, "taste test": 2, michelin: 3, "sourdough": 3, "pasta": 2,
+      "spices": 2, "fermentation": 3, "grill": 2, "food": 1, "restaurant": 2 } },
+    { id: "travel", name: "Travel", terms: {
+      travel: 3, travelling: 3, traveling: 3, backpacking: 3, itinerary: 3, "digital nomad": 3,
+      tourism: 2, "visa": 1, "hotel": 2, "abroad": 2, "country": 1, "city guide": 3,
+      "things to do": 2, "road trip": 3, "hostel": 2, "sightseeing": 3 } },
+    { id: "history", name: "History & Archaeology", terms: {
+      history: 2, historical: 2, ancient: 2, medieval: 3, empire: 2, civilization: 2,
+      archaeology: 3, artifact: 2, artifacts: 2, dynasty: 3, "cold war": 3, "world war": 3,
+      archaeologist: 3, excavation: 3, roman: 2, "bronze age": 3, "19th century": 2,
+      "18th century": 2, "archaeologists": 3, "pharaoh": 3, "ottoman": 3, "byzantine": 3 } },
+    { id: "news", name: "News & Geopolitics", terms: {
+      geopolitics: 3, sanctions: 3, diplomacy: 3, election: 2, parliament: 3, "foreign policy": 3,
+      nato: 3, "current events": 3, brexit: 3, "prime minister": 2, "united nations": 3,
+      "policy": 2, "politics": 2, "military": 2, "conflict": 1, "trade war": 3, "tariffs": 3 } },
+    { id: "philosophy", name: "Philosophy & Ideas", terms: {
+      philosophy: 3, philosopher: 3, ethics: 3, metaphysics: 3, existential: 3, nietzsche: 3,
+      kant: 3, "meaning of life": 3, "free will": 3, "thought experiment": 3, "moral": 2,
+      "consciousness": 2, "epistemology": 3, "stoicism": 2, "utilitarian": 3 } },
+    { id: "nature", name: "Nature & Environment", terms: {
+      wildlife: 3, animals: 2, ocean: 2, climate: 2, ecosystem: 3, conservation: 3, forest: 2,
+      gardening: 3, plants: 2, permaculture: 3, "national park": 2, species: 2, marine: 2,
+      sustainability: 2, biodiversity: 3, "birds": 2, "insects": 2, "coral": 3, "glacier": 3 } },
+    { id: "cars", name: "Cars & Motorsport", terms: {
+      automotive: 3, "engine swap": 3, motorcycle: 3, "formula 1": 3, "f1": 2, tesla: 2, dyno: 3,
+      turbo: 3, supercar: 3, "drift": 2, mechanic: 2, horsepower: 3, "engine bay": 3,
+      "car": 2, "cars": 2, "racing": 2, "restoration": 1, "ev": 1, "porsche": 3, "ferrari": 3 } },
+    { id: "aviation", name: "Aviation & Flight", terms: {
+      aviation: 3, aircraft: 3, "flight simulator": 3, airport: 2, airbus: 3, boeing: 3,
+      airline: 2, cockpit: 3, a380: 3, "air traffic": 3, "pilot": 2, "aviation": 3,
+      "airshow": 3, "helicopter": 3, "airforce": 3 } },
+    { id: "photo", name: "Photography", terms: {
+      photography: 3, photographer: 3, lightroom: 3, "street photography": 3,
+      "landscape photography": 3, "camera gear": 3, "prime lens": 3, "aperture": 2,
+      "shutter speed": 3, "iso": 1, "portrait": 2, "raw files": 3 } },
+    { id: "learn", name: "Education & Explainers", terms: {
+      explainer: 3, "explained": 2, lecture: 3, curriculum: 3, professor: 2, "khan academy": 3,
+      "exam": 2, "tuition": 2, "syllabus": 3, "textbook": 2, "school": 1, "classroom": 2,
+      "teacher": 2, "students": 1, "revision": 1, "neet": 3, "jee": 2, "upsc": 3 } },
+    { id: "language", name: "Languages", terms: {
+      "language learning": 3, polyglot: 3, vocabulary: 3, pronunciation: 3, grammar: 2,
+      "learn english": 3, "learn spanish": 3, "learn japanese": 3, "speak fluent": 3,
+      "fluency": 3, "conjugation": 3, "ielts": 3, "toefl": 3, "alphabet": 2, "mandarin": 2 } },
+    { id: "sport", name: "Sport", terms: {
+      football: 2, basketball: 2, cricket: 2, tennis: 2, olympics: 2, "world cup": 3,
+      "premier league": 3, nba: 3, "training drills": 3, athlete: 2, "athletics": 2,
+      "sport": 2, "sports": 2, "tournament": 2, "formula 1": 1, "uefa": 3, "ipl": 3 } },
+    { id: "podcast", name: "Podcasts & Interviews", terms: {
+      podcast: 3, podcasts: 3, interview: 2, interviews: 2, "conversation with": 3, guest: 2,
+      "episode": 1, "host": 1, "conversations": 2, "sit down with": 3, "q&a": 2 } },
+    { id: "comedy", name: "Comedy & Entertainment", terms: {
+      comedy: 3, "stand-up": 3, standup: 3, prank: 3, "sketch comedy": 3, "funny": 2,
+      "parody": 3, "satire": 3, "improv": 3, "entertainment": 1, "challenge": 1 } },
+  ]
+  const CAT_FALLBACK = { id: "other", name: "Uncategorised" };
+  const CAT_KNOWN = new Set([...CATS.map(c => c.id), CAT_FALLBACK.id]);
+  let catList = null;
+  let catOfCh = null;
+  let autoCatOfCh = null; // the classifier's bucket, before your manual overrides
+  const catCounts = new Map();
+
+  const tokenSet = text => {
+    const w = String(text).toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+    const s = new Set(w);
+    for (let i = 1; i < w.length; i++) s.add(w[i - 1] + " " + w[i]);
+    return s;
+  };
+
+  function buildCategories() {
+    if (catList) return;
+    const N = CH.length;
+    const titleSets = [], nameSets = [], descSets = [], lens = [];
+    for (let i = 0; i < N; i++) {
+      const titles = byChannel[i].slice(0, 30).map(v => v.title).join(" \n ");
+      titleSets.push(tokenSet(titles));
+      nameSets.push(tokenSet(CH[i].name));
+      descSets.push(tokenSet(CH[i].desc || ""));
+      lens.push(titles.length / 6 + (CH[i].desc || "").length / 6 + CH[i].name.length * 3);
+    }
+    const df = new Map();
+    for (const c of CATS) for (const t of Object.keys(c.terms)) df.set(t, 0);
+    for (let i = 0; i < N; i++) {
+      for (const t of df.keys()) {
+        if (titleSets[i].has(t) || nameSets[i].has(t) || descSets[i].has(t)) df.set(t, df.get(t) + 1);
+      }
+    }
+    catList = CATS.map(c => {
+      let norm = 0;
+      const terms = [];
+      for (const [term, w] of Object.entries(c.terms)) {
+        const d = df.get(term) || 0;
+        if (!d || d > N * 0.35) continue; // nowhere or everywhere: no signal
+        const eff = w * Math.log((N + 1) / (d + 1));
+        if (eff < 0.6) continue;
+        terms.push([term, eff]);
+        norm += eff * eff;
+      }
+      return { id: c.id, name: c.name, terms, norm: Math.sqrt(norm) || 1 };
+    });
+    catOfCh = new Array(N);
+    autoCatOfCh = new Array(N);
+    for (const c of catList) catCounts.set(c.id, 0);
+    for (let i = 0; i < N; i++) {
+      let best = null, bestScore = 0;
+      for (const c of catList) {
+        let s = 0;
+        for (const [term, w] of c.terms) {
+          if (titleSets[i].has(term)) s += w * 2.2;
+          else if (nameSets[i].has(term)) s += w * 3;
+          else if (descSets[i].has(term)) s += w;
+        }
+        if (s <= 0) continue;
+        const n = (s / c.norm) / Math.pow(Math.max(1, lens[i]) / 500, 0.25);
+        if (n > bestScore) { bestScore = n; best = c; }
+      }
+      autoCatOfCh[i] = bestScore >= 0.33 && best ? best.id : CAT_FALLBACK.id;
+      const ov = catOv[CH[i].id]; // a manual move beats the classifier's guess
+      catOfCh[i] = ov && CAT_KNOWN.has(ov) ? ov : autoCatOfCh[i];
+      catCounts.set(catOfCh[i], (catCounts.get(catOfCh[i]) || 0) + 1);
+    }
+  }
+
+  const catDef = id => (id === CAT_FALLBACK.id ? CAT_FALLBACK : (catList || []).find(c => c.id === id) || CAT_FALLBACK);
+  const catIdOf = c => (catOfCh ? catOfCh[c.i] : CAT_FALLBACK.id);
+  const catName = c => catDef(catIdOf(c)).name;
+  const catOff = c => hiddenCat.has(catIdOf(c));
+
+  // Re-assign every channel from the classifier's bucket plus your manual overrides, and
+  // rebuild the per-bucket channel counts. Cheap enough (1.4k rows) to run on each move.
+  function rebucket() {
+    catCounts.clear();
+    for (let i = 0; i < CH.length; i++) {
+      const ov = catOv[CH[i].id];
+      catOfCh[i] = ov && CAT_KNOWN.has(ov) ? ov : (autoCatOfCh ? autoCatOfCh[i] : CAT_FALLBACK.id);
+      catCounts.set(catOfCh[i], (catCounts.get(catOfCh[i]) || 0) + 1);
+    }
+  }
+
+  function setCatOverride(c, target) {
+    buildCategories();
+    const prev = catOv[c.id];
+    if (target) catOv[c.id] = target; else delete catOv[c.id];
+    saveCatOv();
+    rebucket();
+    invalidateWatched();
+    renderSide();
+    route();
+    const name = target ? catDef(target).name : catDef(autoCatOfCh[c.i]).name;
+    toast(`Moved ${c.name} to ${name}.`, "Undo", () => {
+      if (prev) catOv[c.id] = prev; else delete catOv[c.id];
+      saveCatOv(); rebucket(); invalidateWatched(); renderSide(); route();
+    });
+  }
+
+  // Per-bucket video totals and how many of them are still unwatched (not in history),
+  // over the channels you can see. Hidden videos are left out entirely.
+  function catVideoStats(chs) {
+    const w = watchedSet();
+    const m = new Map();
+    for (const c of chs) for (const v of byChannel[c.i]) {
+      if (hiddenVid.has(v.id)) continue;
+      const id = catOfCh[c.i];
+      let e = m.get(id); if (!e) { e = { total: 0, unread: 0 }; m.set(id, e); }
+      e.total++; if (!w.has(v.id)) e.unread++;
+    }
+    return m;
+  }
+
+  // Categories live in the bar across the top; channels keep the sidebar.
+  function renderCategories() {
+    buildCategories();
+    const host = $("#catBar");
+    if (!host) return;
+    const stats = catVideoStats(CH.filter(c => !hiddenCh.has(c.id)));
+    const rows = catList.filter(c => catCounts.get(c.id))
+      .sort((a, b) => catCounts.get(b.id) - catCounts.get(a.id));
+    if (catCounts.get(CAT_FALLBACK.id)) rows.push(CAT_FALLBACK);
+    const route = routeFromHash();
+    host.innerHTML = rows.map(c => {
+      const off = hiddenCat.has(c.id);
+      const n = catCounts.get(c.id) || 0;
+      const st = stats.get(c.id);
+      const unseen = st && st.unread > 0 && st.unread < st.total ? ` <i class="unread">${fmtNum(st.unread)} new</i>` : "";
+      return `<div class="cchip${off ? " off" : ""}${route === "t/" + c.id ? " on" : ""}" data-href="#/t/${c.id}" data-route="t/${c.id}">
+        <span>${esc(c.name)}</span><b>${fmtNum(n)}</b>${unseen}
+        <button class="eye" data-hidecat="${c.id}" title="${off ? "Show" : "Hide"} ${esc(c.name)}" aria-label="${off ? "Show" : "Hide"} category ${esc(c.name)}">${off ? eyeOff : eyeOpen}</button></div>`;
+    }).join("");
+  }
+
+  function toggleCategory(id, silent) {
+    buildCategories();
+    const def = catDef(id);
+    const was = hiddenCat.has(id);
+    if (was) hiddenCat.delete(id); else hiddenCat.add(id);
+    saveHidden();
+    renderSide();
+    route();
+    if (silent) return;
+    if (was) toast(`${def.name} is back — its channels show up in your feeds again.`);
+    else toast(`Hid ${def.name} — ${fmtNum(catCounts.get(id) || 0)} channels out of All videos, search and recommendations.`, "Undo", () => {
+      hiddenCat.delete(id); saveHidden(); renderSide(); route();
+    });
+  }
+
+  function toggleSeenCat(id) {
+    buildCategories();
+    const was = seenAll.cats.has(id);
+    if (was) seenAll.cats.delete(id); else seenAll.cats.add(id);
+    saveSeen();
+    invalidateWatched();
+    renderSide();
+    route();
+    if (was) toast(`${catDef(id).name} is unwatched again — its unread count is back.`);
+    else toast(`Marked every ${catDef(id).name} video as watched.`, "Undo", () => {
+      seenAll.cats.delete(id); saveSeen(); invalidateWatched(); renderSide(); route();
+    });
+  }
+
+  function toggleSeenCh(c) {
+    const was = seenAll.chs.has(c.id);
+    if (was) seenAll.chs.delete(c.id); else seenAll.chs.add(c.id);
+    saveSeen();
+    invalidateWatched();
+    renderSide();
+    route();
+    if (was) toast(`${c.name}'s watched mark is cleared.`);
+    else toast(`Marked every ${c.name} video as watched.`, "Undo", () => {
+      seenAll.chs.delete(c.id); saveSeen(); invalidateWatched(); renderSide(); route();
+    });
+  }
+
+  // Shared by the star buttons and the 1-5 keyboard shortcut on channel pages.
+  function setRating(c, n) {
+    const prev = ratings[c.id];
+    if (prev === n) delete ratings[c.id]; else ratings[c.id] = n;
+    saveRatings();
+    main.querySelectorAll("#stars button").forEach(x => x.classList.toggle("lit", +x.dataset.rate <= (ratings[c.id] || 0)));
+    const refreshBadge = () => {
+      const rowEl = $(`#chList .item[data-route="c/${c.i}"]`);
+      if (!rowEl) return;
+      const badge = rowEl.querySelector(".ratebadge");
+      if (ratings[c.id]) {
+        if (!badge) { const el = document.createElement("span"); el.className = "ratebadge"; rowEl.insertBefore(el, rowEl.querySelector(".eye")); el.textContent = "★" + ratings[c.id]; }
+        else badge.textContent = "★" + ratings[c.id];
+      } else if (badge) badge.remove();
+    };
+    refreshBadge();
+    toast(ratings[c.id] ? `Rated ${c.name} ${ratings[c.id]} stars.` : `Rating cleared for ${c.name}.`, "Undo", () => {
+      if (prev) ratings[c.id] = prev; else delete ratings[c.id];
+      saveRatings();
+      main.querySelectorAll("#stars button").forEach(x => x.classList.toggle("lit", +x.dataset.rate <= (ratings[c.id] || 0)));
+      refreshBadge();
+    });
+    return ratings[c.id] || 0;
+  }
+
+  function viewCat(id) {
+    buildCategories();
+    const def = catDef(id);
+    const hidden = hiddenCat.has(id);
+    const chs = CH.filter(c => catOfCh[c.i] === id);
+    const shown = chs.filter(c => !hiddenCh.has(c.id));
+    const total = shown.reduce((n, c) => n + byChannel[c.i].length, 0);
+    const st = catVideoStats(shown).get(id);
+    const unread = st ? st.unread : 0;
+    main.innerHTML = `<div class="chhead">
+      <div style="min-width:0">
+        <h1>${esc(def.name)}</h1>
+        <div class="sub">${fmtNum(shown.length)} channel${shown.length === 1 ? "" : "s"} · ${fmtNum(total)} videos${unread && unread < total ? ` · ${fmtNum(unread)} unwatched` : ""}${hidden ? " · hidden from your feeds" : ""}</div>
+        <div class="blurb">Grouped from each channel's name, description and recent video titles — a keyword classifier with idf weighting, not a hand-kept list.</div>
+        <div class="actions">
+          <button class="pill${hidden ? " primary" : ""}" data-hidecat="${id}">${hidden ? "Show category" : "Hide category"}</button>
+          <button class="pill" id="markCat">${seenAll.cats.has(id) ? "Clear watched mark" : "Mark all watched"}</button>
+        </div>
+      </div></div>
+      <div class="feed"></div>`;
+    const feed = $(".feed", main);
+    $("#markCat", main).onclick = () => toggleSeenCat(id);
+    const items = interleave(shown.map(c => byChannel[c.i].filter(v => !hiddenVid.has(v.id))));
+    let pos = 0;
+    const grid = infiniteGrid(feed, n => items.slice(pos, pos += n), {
+      empty: "No channels landed in this category.",
+      watched: watchedSet(),
+    });
+    document.title = def.name + " - My Tube";
+    window.scrollTo(0, 0);
+    cleanup = () => grid.stop();
+  }
+
+  // 1,478 channels: render a slice, let the filter box reach the rest.
+  function renderChannelList(term) {
+    const q = term.trim().toLowerCase();
+    const hits = q ? CH.filter(c => c.name.toLowerCase().includes(q)) : CH.slice().sort((a, b) => b.n - a.n);
+    const shown = hits.slice(0, q ? 150 : 40);
+    const row = c => `<div class="item${chOff(c) ? " off" : ""}" data-href="#/c/${c.i}" data-route="c/${c.i}">${avatar(c)}<span class="name">${esc(c.name)}</span><span class="cnt">${fmtNum(c.n)}</span>${ratings[c.id] ? `<span class="ratebadge">★${ratings[c.id]}</span>` : ""}<button class="eye" data-hidech="${c.i}" title="${chOff(c) ? "Show" : "Hide"} ${esc(c.name)}" aria-label="${chOff(c) ? "Show" : "Hide"} channel">${chOff(c) ? eyeOff : eyeOpen}</button></div>`;
+    let h = shown.map(row).join("");
+    if (!shown.length) h = `<div class="sideempty">No channel matches that.</div>`;
+    else if (hits.length > shown.length) h += `<div class="sideempty">${fmtNum(hits.length - shown.length)} more — type to narrow</div>`;
+    $("#chList").innerHTML = h;
+    markSide(routeFromHash());
+  }
+
+  function renderSide() {
+    $("#side").innerHTML = `<a class="item" href="#/" data-route="home">
+      <svg class="nav" viewBox="0 0 24 24"><path d="M4 21V10.08l8-6.96 8 6.96V21h-6v-6h-4v6H4z"/></svg>
+      All videos<span class="cnt">${fmtNum(V.length)}</span></a>
+      <hr><h4>Courses <button class="addbtn" id="newCourse" title="New course" aria-label="New course">+</button></h4>
+      <div id="courseList"></div>
+      <hr><h4>Subscribed channels</h4>
+      <input id="chFilter" class="chfilter" type="search" placeholder="Filter ${fmtNum(CH.length)} channels" autocomplete="off" aria-label="Filter channels">
+      <div id="chList"></div>
+      <div class="sideempty" id="hiddenNote"></div>
+      <h4>Feed filters</h4>
+      <div class="chips sidechips">
+        <button class="chip${filters.shorts ? " on" : ""}" id="filtShorts">Hide Shorts</button>
+        <button class="chip${filters.unwatched ? " on" : ""}" id="filtUnwatched">Only unwatched</button>
+      </div>
+      <hr><a class="item" href="#/about" data-route="about">
+      <svg class="nav" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+      About</a>
+      <div style="color:var(--fg2);font-size:11.5px;line-height:1.5;padding:14px 10px 0">
+        ${fmtNum(CH.length)} channels from your YouTube subscriptions. Videos play through YouTube.
+      </div>`;
+    renderChannelList("");
+    renderCategories();
+    renderCourses();
+    updateHiddenNote();
+    $("#chFilter").addEventListener("input", e => renderChannelList(e.target.value));
+    $("#newCourse").addEventListener("click", () => openCourseModal(null));
+    const bindFilter = (id, key, onText) => {
+      const b = $(id);
+      if (!b) return;
+      b.onclick = () => {
+        const prev = filters[key];
+        filters[key] = !prev;
+        saveFilters();
+        b.classList.toggle("on", filters[key]);
+        route();
+        toast(filters[key] ? onText : "Filter off — showing everything.", "Undo", () => {
+          filters[key] = prev; saveFilters();
+          b.classList.toggle("on", prev);
+          route();
+        });
+      };
+    };
+    bindFilter("#filtShorts", "shorts", "Shorts are out of your feeds.");
+    bindFilter("#filtUnwatched", "unwatched", "Showing only videos you haven't watched.");
+  }
+  function markSide(route) {
+    document.querySelectorAll("#side .item").forEach(el => el.classList.toggle("active", el.dataset.route === route));
+    document.querySelectorAll("#catBar .cchip").forEach(el => el.classList.toggle("on", el.dataset.route === route));
+  }
+
+  /* ---------- home ---------- */
+  let cleanup = () => {};
+  const sorts = [["foryou", "For you"], ["latest", "Latest"], ["popular", "Popular"], ["shuffled", "Shuffled"]];
+
+  // Round-robin across channels keeps big channels from burying the small ones.
+  function interleave(lists) {
+    const out = [];
+    const max = Math.max(0, ...lists.map(l => l.length));
+    for (let i = 0; i < max; i++) for (const l of lists) if (i < l.length) out.push(l[i]);
+    return out;
+  }
+
+  function viewHome() {
+    let chFilter = null;
+    let sort = history.length ? "foryou" : "latest";
+    const recent = history.slice(-10).reverse().map(h => byId.get(h.id)).filter(v => v && !vOff(v));
+    main.innerHTML = `
+      <div class="chips" id="chChips">
+        <button class="chip on" data-c="all">All channels</button>
+        ${CH.slice().sort((a, b) => b.n - a.n).slice(0, 15).map(c => `<button class="chip${chOff(c) ? " off" : ""}" data-c="${c.i}"${chOff(c) ? ' title="Hidden"' : ""}>${avatar(c)}${esc(c.name)}</button>`).join("")}
+      </div>
+      <div class="chips" id="sortChips">
+        ${sorts.map(([k, label]) => `<button class="chip${k === sort ? " on" : ""}" data-s="${k}">${label}</button>`).join("")}
+      </div>
+      ${recent.length ? `<h2 class="shelfhead">Continue watching</h2><div class="shelf">${recent.map(v => mini(v, whyFor(v.id))).join("")}</div>` : ""}
+      <div id="shelves"></div>
+      <div class="feed"></div>`;
+    const feed = $(".feed", main);
+    const shelfHost = $("#shelves", main);
+    let grid = null;
+
+    const drawShelves = () => {
+      shelfHost.replaceChildren();
+      _why.clear();   // reasons belong to this render only
+      if (sort !== "foryou" || chFilter != null || !history.length) return;
+      const list = homeShelves(chFilter);
+      if (!list.length) return;
+      shelfHost.innerHTML = list.map(s => `<section class="shelfwrap" data-shelf="${esc(s.id)}">
+        <h2 class="shelfhead">${esc(s.title)}<span class="shelfnote">${esc(s.note)}</span></h2>
+        <div class="shelf">${s.items.map(v => mini(v, whyFor(v.id))).join("")}</div>
+      </section>`).join("");
+      for (const s of list) shelfImpression(s.id);
+    };
+
+    const list = () => {
+      const chs = (chFilter == null ? CH : [CH[chFilter]]).filter(c => !chOff(c));
+      if (sort === "foryou") return forYou(chs);
+      const pool = chs.flatMap(c => byChannel[c.i]).filter(v => !vOff(v));
+      if (sort === "popular") return pool.sort((a, b) => (b.views || 0) - (a.views || 0));
+      if (sort === "shuffled") return shuffle(pool);
+      return interleave(chs.map(c => byChannel[c.i])).filter(v => !vOff(v)); // each channel is newest-first
+    };
+    const rebuild = () => {
+      grid && grid.stop();
+      feed.replaceChildren();
+      if (sort === "foryou") {
+        const note = document.createElement("div");
+        note.className = "feednote";
+        if (history.length) {
+          const p = profile();
+          const learned = ranker ? `learned ranker (${fmtNum(ranker.pairs)} pairs)` : "hand-tuned weights";
+          note.innerHTML = `Ranked from ${fmtNum(p.watched.size)} watched videos · topic vectors + channel graph + ${learned} · <button id="tuneRec">Tune</button> · <button id="resetRec">Reset</button>`;
+          note.querySelector("#tuneRec").onclick = openReco;
+          note.querySelector("#resetRec").onclick = () => {
+            history = [];
+            store.set("history", history);
+            negIds.clear();
+            saveNeg();
+            invalidateReco();
+            toast("Recommendations reset.");
+            rebuild();
+            drawShelves();
+          };
+        } else {
+          note.textContent = "Watch a few videos and this feed starts ranking by the topics and channels you actually watch.";
+        }
+        feed.append(note);
+      }
+      const items = list();
+      let pos = 0;
+      grid = infiniteGrid(feed, n => items.slice(pos, pos += n), { empty: "Nothing to show — every channel in this view is hidden." });
+    };
+    main.querySelectorAll("#chChips .chip").forEach(b => b.onclick = () => {
+      chFilter = b.dataset.c === "all" ? null : +b.dataset.c;
+      main.querySelectorAll("#chChips .chip").forEach(x => x.classList.toggle("on", x === b));
+      drawShelves();
+      rebuild();
+    });
+    main.querySelectorAll("#sortChips .chip").forEach(b => b.onclick = () => {
+      sort = b.dataset.s;
+      main.querySelectorAll("#sortChips .chip").forEach(x => x.classList.toggle("on", x === b));
+      drawShelves();
+      rebuild();
+    });
+    drawShelves();   // first, so the grid's "why this" lines are not cleared afterwards
+    rebuild();
+    document.title = "My Tube";
+    window.scrollTo(0, 0);
+    cleanup = () => grid && grid.stop();
+  }
+
+  /* ---------- channel ---------- */
+  function viewChannel(i) {
+    const c = CH[i];
+    if (!c) { main.innerHTML = `<div class="empty">Channel not found.</div>`; return; }
+    let order = "newest";
+    main.innerHTML = `<div class="chhead">${avatar(c, "xl")}
+      <div style="min-width:0">
+        <h1>${esc(c.name)}</h1>
+        <div class="sub">${c.handle ? esc(c.handle) + " · " : ""}${fmtNum(c.n)} videos${c.subs ? " · " + fmtNum(c.subs) + " subscribers" : ""}</div>
+        ${c.desc ? `<div class="blurb">${esc(c.desc)}</div>` : ""}
+        <div class="actions">
+          <a class="pill" href="#/t/${catIdOf(c)}">${esc(catName(c))}${catOv[c.id] ? " ✎" : ""}</a>
+          <select class="catpick" id="catPick" title="Move this channel to another category (overrides the automatic bucket)" aria-label="Move this channel to another category">
+            <option value="">Automatic: ${esc(catDef(autoCatOfCh ? autoCatOfCh[i] : catIdOf(c)).name)}</option>${(catList || []).map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join("")}<option value="${CAT_FALLBACK.id}">${esc(CAT_FALLBACK.name)}</option>
+          </select>
+          <span class="stars" id="stars">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-rate="${n}" class="${ratings[c.id] >= n ? "lit" : ""}" title="${n} stars" aria-label="Rate ${esc(c.name)} ${n} stars">★</button>`).join("")}</span>
+          <button class="pill" id="markCh">${seenAll.chs.has(c.id) ? "Clear watched mark" : "Mark all watched"}</button>
+          <a class="pill" href="${esc(c.url)}" target="_blank" rel="noopener">Channel on YouTube ↗</a>
+          <button class="pill" data-course="${c.i}">＋ Add to course</button>
+          <button class="pill" data-hidech="${c.i}">${chOff(c) ? "Show channel" : "Hide channel"}</button>
+        </div>
+        ${catOv[c.id] ? `<div class="blurb">You moved this channel to <b>${esc(catName(c))}</b> manually — pick “Automatic” above to let the classifier decide again.</div>` : ""}
+        ${chOff(c) ? `<div class="blurb" style="color:var(--brand)">Hidden from All videos, search and recommendations.</div>` : ""}
+      </div></div>
+      <div id="chRail"></div>
+      <div class="chips">
+        <button class="chip on" data-o="newest">Newest</button>
+        <button class="chip" data-o="popular">Popular</button>
+        <button class="chip" data-o="shuffled">Shuffled</button>
+      </div>
+      <div class="feed"></div>`;
+    const feed = $(".feed", main);
+    let grid = null;
+    const pick = $("#catPick", main);
+    if (pick) { pick.value = catOv[c.id] || ""; pick.onchange = e => setCatOverride(c, e.target.value || null); }
+    const markBtn = $("#markCh", main);
+    if (markBtn) markBtn.onclick = () => toggleSeenCh(c);
+    main.querySelectorAll("#stars button").forEach(b => b.onclick = () => setRating(c, +b.dataset.rate));
+    const rebuild = () => {
+      grid && grid.stop();
+      feed.replaceChildren();
+      const items = byChannel[i].slice();
+      if (order === "popular") items.sort((a, b) => (b.views || 0) - (a.views || 0));
+      else if (order === "shuffled") shuffle(items);
+      let pos = 0;
+      grid = infiniteGrid(feed, n => items.slice(pos, pos += n), { showChannel: false, empty: "No videos listed for this channel." });
+    };
+    main.querySelectorAll(".chips .chip").forEach(b => b.onclick = () => {
+      order = b.dataset.o;
+      main.querySelectorAll(".chips .chip").forEach(x => x.classList.toggle("on", x === b));
+      rebuild();
+      window.scrollTo({ top: 0 });
+    });
+    const rail = $("#chRail", main);
+    if (rail) {
+      const nbs = neighboursOfChannel(i, 10);
+      if (nbs.length) {
+        rail.innerHTML = `<h2 class="shelfhead">Similar channels<span class="shelfnote">channels that publish about the same things</span></h2>
+          <div class="shelf">${nbs.map(([n, s]) => chCard(n, s)).join("")}</div>`;
+      }
+    }
+    rebuild();
+    document.title = c.name + " - My Tube";
+    window.scrollTo(0, 0);
+    cleanup = () => grid && grid.stop();
+  }
+
+  /* ---------- search ---------- */
+  function viewSearch(q) {
+    $("#q").value = q;
+    const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+    const score = v => {
+      const title = v.title.toLowerCase();
+      const channel = CH[v.ch].name.toLowerCase();
+      const inTitle = terms.every(t => title.includes(t));
+      const hits = terms.filter(t => title.includes(t)).length;
+      return (inTitle ? 4 : 0) + hits + (terms.every(t => channel.includes(t)) ? 2 : 0);
+    };
+    const hits = V
+      .filter(v => !vOff(v) && (() => { const hay = v.title.toLowerCase() + " " + CH[v.ch].name.toLowerCase(); return terms.every(t => hay.includes(t)); })())
+      .sort((a, b) => score(b) - score(a) || (b.views || 0) - (a.views || 0));
+    main.innerHTML = `<h2 class="pagetitle">${fmtNum(hits.length)} result${hits.length === 1 ? "" : "s"} for “${esc(q)}”</h2><div class="feed"></div>`;
+    let pos = 0;
+    const grid = infiniteGrid($(".feed", main), n => hits.slice(pos, pos += n), { empty: "No videos matched that search." });
+    document.title = q + " - My Tube";
+    window.scrollTo(0, 0);
+    cleanup = () => grid.stop();
+  }
+
+  /* ---------- watch ---------- */
+  let ytReady = null;
+  let player = null;
+  let upNext = [];
+  let autoplay = (() => { try { return localStorage.getItem("jeetube-autoplay") !== "0"; } catch { return true; } })();
+  if (typeof window.onYouTubeIframeAPIReady === "undefined") window.onYouTubeIframeAPIReady = null;
+
+  function loadYT() {
+    if (!ytReady) {
+      ytReady = new Promise(resolve => {
+        window.onYouTubeIframeAPIReady = resolve;
+        const s = document.createElement("script");
+        s.src = "https://www.youtube.com/iframe_api";
+        document.head.append(s);
+      });
+    }
+    return ytReady;
+  }
+
+  function playNext() {
+    const v = upNext[0];
+    if (v) location.hash = `#/watch/${v.id}`;
+  }
+
+  function viewWatch(id) {
+    const v = byId.get(id);
+    if (!v) { main.innerHTML = `<div class="empty">Video not found.</div>`; return; }
+    const c = CH[v.ch];
+    remember(v);
+    upNext = similarTo(v, 15); // hybrid: topic vectors + channel graph + what usually follows
+    const prof = profile();
+    const whyUp = new Map();
+    for (const x of upNext) if (x.ix != null) whyUp.set(x.id, explain(x.ix, prof));
+
+    main.innerHTML = `<div class="watch">
+      <div class="primary">
+        <div class="player"><div id="ytplayer"></div></div>
+        <h1>${esc(v.title)}</h1>
+        <div class="chrow">${avatar(c, "lg")}
+          <div style="min-width:0">
+            <a class="nm" href="#/c/${c.i}">${esc(c.name)}</a>
+            <div class="cnt">${c.subs ? fmtNum(c.subs) + " subscribers" : fmtNum(c.n) + " videos"}</div>
+          </div>
+          <div class="actions">
+            <button class="pill primary" id="nextBtn" title="Next video (Shift+N)">Next video ⏭</button>
+            <a class="pill" href="https://www.youtube.com/watch?v=${v.id}" target="_blank" rel="noopener">YouTube ↗</a>
+            <button class="pill" data-course="${c.i}" data-video="${v.id}">＋ Course</button>
+            <button class="pill" data-hidevid="${v.id}">Hide</button>
+            <button class="pill${negIds.has(v.id) ? " primary" : ""}" data-notint="${v.id}">${negIds.has(v.id) ? "Not interested ✓" : "Not interested"}</button>
+          </div>
+        </div>
+        <div class="desc">
+          <div class="stats">${[fmtViews(v.views), v.dur ? fmtDur(v.dur) : ""].filter(Boolean).join(" · ") || "—"}</div>
+          <div class="tagline">${esc(c.name)}${c.desc ? " · " + esc(c.desc) : ""}</div>
+        </div>
+      </div>
+      <aside class="secondary">
+        <h3>Up next</h3>
+        <label class="autoplay"><input type="checkbox" id="autoplayBox" ${autoplay ? "checked" : ""}> Autoplay next video</label>
+        ${upNext.map(x => mini(x, whyUp.get(x.id) || "")).join("")}
+      </aside>
+    </div>`;
+
+    $("#nextBtn").onclick = playNext;
+    $("#autoplayBox").onchange = e => {
+      autoplay = e.target.checked;
+      try { localStorage.setItem("jeetube-autoplay", autoplay ? "1" : "0"); } catch {}
+    };
+    document.title = v.title + " - My Tube";
+    window.scrollTo(0, 0);
+
+    let ended = false;
+    loadYT().then(() => {
+      if (location.hash !== `#/watch/${id}`) return;
+      player = new YT.Player("ytplayer", {
+        videoId: id,
+        playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1 },
+        events: {
+          onStateChange: e => {
+            if (e.data === YT.PlayerState.ENDED) {
+              ended = true;
+              rememberEngagement(id, 0, true);
+              if (autoplay) playNext();
+            }
+          },
+        },
+      });
+    });
+    cleanup = () => {
+      let secs = 0;
+      try { if (player && player.getCurrentTime) secs = player.getCurrentTime() || 0; } catch {}
+      rememberEngagement(id, secs, ended);   // how much you watched weights this video in future rankings
+      try { player && player.destroy(); } catch {}
+      player = null;
+    };
+  }
+
+  /* ---------- backup: export / import ----------
+     Everything that makes the app yours lives in a handful of mytube-* keys. Export
+     serialises them to one JSON file; import validates the shape, replaces the current
+     state, and keeps an Undo of whatever was there before. */
+  const STATE_KEYS = ["hidden-ch", "hidden-vid", "hidden-cat", "cat-ov", "ratings", "courses", "history", "seen", "neg"];
+  const emptyFor = k => (k === "cat-ov" || k === "ratings" || k === "seen") ? {} : [];
+  const snapshotState = () => {
+    const s = {};
+    for (const k of STATE_KEYS) s[k] = store.get(k, emptyFor(k));
+    return s;
+  };
+  function exportState() {
+    const payload = { mytube: 1, exportedAt: new Date().toISOString(), state: snapshotState() };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "mytube-backup.json";
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    toast("Downloaded your backup — hidden items, category moves, star ratings, courses and history.");
+  }
+  function applyState(state) {
+    const prev = snapshotState();
+    hiddenCh.clear(); for (const id of state["hidden-ch"]) hiddenCh.add(id);
+    hiddenVid.clear(); for (const id of state["hidden-vid"]) hiddenVid.add(id);
+    hiddenCat.clear(); for (const id of state["hidden-cat"]) hiddenCat.add(id);
+    Object.keys(catOv).forEach(k => delete catOv[k]); Object.assign(catOv, state["cat-ov"]);
+    ratings = { ...state["ratings"] };
+    courses = state["courses"];
+    history = state["history"];
+    seenAll = { cats: new Set(state["seen"].cats), chs: new Set(state["seen"].chs) };
+    negIds = new Set(Array.isArray(state["neg"]) ? state["neg"] : []);
+    saveHidden(); saveCatOv(); saveRatings(); saveCourses(); saveSeen(); saveNeg();
+    store.set("history", history);
+    rebucket();
+    invalidateWatched();
+    renderSide();
+    route();
+    return prev;
+  }
+  function importState(file) {
+    file.text().then(text => {
+      let payload;
+      try { payload = JSON.parse(text); } catch { toast("That file isn't valid JSON — nothing changed."); return; }
+      if (!payload || payload.mytube !== 1 || !payload.state || typeof payload.state !== "object") {
+        toast("That doesn't look like a My Tube backup — nothing changed."); return;
+      }
+      const s = payload.state;
+      const strArr = v => Array.isArray(v) ? v.filter(x => typeof x === "string") : [];
+      const obj = v => (v && typeof v === "object" && !Array.isArray(v)) ? v : {};
+      const seenRaw = obj(s["seen"]);
+      const clean = {
+        "hidden-ch": strArr(s["hidden-ch"]),
+        "hidden-vid": strArr(s["hidden-vid"]),
+        "hidden-cat": strArr(s["hidden-cat"]),
+        "cat-ov": Object.fromEntries(Object.entries(obj(s["cat-ov"])).filter(([, v]) => typeof v === "string")),
+        "ratings": Object.fromEntries(Object.entries(obj(s["ratings"])).filter(([, v]) => Number.isInteger(v) && v >= 1 && v <= 5)),
+        "courses": (Array.isArray(s["courses"]) ? s["courses"] : [])
+          .filter(c => c && typeof c.name === "string" && Array.isArray(c.videos))
+          .map(c => ({ ...c, id: typeof c.id === "string" ? c.id : "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), videos: c.videos.filter(x => typeof x === "string") })),
+        "history": (Array.isArray(s["history"]) ? s["history"] : [])
+          .filter(h => h && typeof h.id === "string")
+          .map(h => ({ id: h.id, ch: Number.isInteger(h.ch) ? h.ch : 0, t: typeof h.t === "number" ? h.t : 0 })),
+        "seen": { cats: strArr(seenRaw.cats), chs: strArr(seenRaw.chs) },
+        "neg": strArr(s["neg"]),
+      };
+      const prev = applyState(clean);
+      const parts = [];
+      if (clean["hidden-ch"].length) parts.push(`${clean["hidden-ch"].length} hidden channels`);
+      if (clean["hidden-vid"].length) parts.push(`${clean["hidden-vid"].length} hidden videos`);
+      if (clean["hidden-cat"].length) parts.push(`${clean["hidden-cat"].length} hidden categories`);
+      if (Object.keys(clean["cat-ov"]).length) parts.push(`${Object.keys(clean["cat-ov"]).length} category moves`);
+      if (Object.keys(clean["ratings"]).length) parts.push(`${Object.keys(clean["ratings"]).length} ratings`);
+      if (clean["courses"].length) parts.push(`${clean["courses"].length} courses`);
+      if (clean["history"].length) parts.push(`${clean["history"].length} history entries`);
+      if (clean["seen"].cats.length || clean["seen"].chs.length) parts.push("watched marks");
+      if (clean["neg"].length) parts.push(`${clean["neg"].length} not-interested marks`);
+      toast(`Imported ${parts.join(", ") || "an empty backup"}.`, "Undo", () => applyState(prev));
+    }).catch(() => toast("Couldn't read that file — nothing changed."));
+  }
+
+  /* ---------- about ---------- */
+  function viewAbout() {
+    const hours = Math.round(V.reduce((s, v) => s + (v.dur || 0), 0) / 3600);
+    const bySize = CH.slice().sort((a, b) => b.n - a.n);
+    const counts = bySize.slice(0, 24).map(c => `<span class="stat"><b>${esc(c.name)}</b> · ${fmtNum(c.n)} videos</span>`).join("")
+      + (bySize.length > 24 ? `<span class="stat">…and ${fmtNum(bySize.length - 24)} more channels</span>` : "");
+    const cap = data.meta && data.meta.per_channel
+      ? ` Each channel contributes its latest <b>${fmtNum(data.meta.per_channel)}</b> uploads; full catalogs across ${fmtNum(CH.length)} channels would be hundreds of thousands of videos.`
+      : "";
+    main.innerHTML = `<div class="about">
+      <h1>About My Tube</h1>
+      <p>A YouTube-style viewer for exactly the channels in your YouTube subscriptions export — nothing else.
+        No recommendations from the wider internet, no Shorts, no algorithmic surprises: just
+        <b>${fmtNum(V.length)} videos</b> (about <b>${fmtNum(hours)} hours</b>) from <b>${fmtNum(CH.length)} channels</b>.</p>
+      <div class="stats">${counts}</div>
+
+      <h2>How it works</h2>
+      <ul>
+        <li><b>Latest</b> interleaves each channel's newest-first upload list, so no single channel takes over the feed.
+          <b>Popular</b> sorts by view count, <b>Shuffled</b> is a stable random order per visit.</li>
+        <li><b>For you</b> is a hybrid two-stage recommender. Candidates come from four generators —
+          BM25 over title words (the ranking function behind Lucene and Elasticsearch), 64-dimension
+          topic vectors built by random projection of TF-IDF, a channel topic graph, and session
+          transitions — then a linear ranker scores them on ten features, and MMR re-ranking spreads
+          the result across channels. Nothing leaves this browser: the profile is built from your local
+          watch history, and the optional ranker trains on it in the page. Up next on the watch page
+          uses the same engine, seeded with the video you are watching.</li>
+        <li><b>Cross-channel by construction.</b> "Because you watched X" shelves deliberately exclude
+          X's channel, the topic graph pulls in channels that publish about the same things, and the
+          channel-spread cap stops any one channel from filling the feed. <b>New to you</b> only shows
+          channels you have never watched.</li>
+        <li><b>Why this?</b> Every recommended card can tell you why it is there — hover it, or read the
+          line under the title on a shelf and in Up next.</li>
+        <li><b>Categories</b> are inferred, not curated: each channel is bucketed from its name,
+          description and 30 most recent titles by a weighted keyword classifier with idf
+          weighting. The bar across the top lists every bucket with its channel count — open
+          one to see that category's videos, or hide it to drop the whole bucket from your
+          feeds. Chips also show how many videos in each bucket you haven't watched yet. If
+          the classifier files a channel wrongly, move it with the category dropdown on its
+          page — the manual move wins until you pick Automatic again.</li>
+        <li><b>Rate</b> any channel with the five stars on its page: 5 stars boosts its videos
+          in For you and Up next, 1 star halves them. Your rating shows as a ★ badge in the
+          sidebar.</li>
+        <li><b>Hide</b> any video with the ✕ on its card, any channel with the eye in the sidebar, or a whole category:
+          its videos drop out of All videos, search and recommendations, and the sidebar keeps a count
+          with a one-click restore.</li>
+        <li><b>Courses</b> are yours to build from any channel: hit <b>+</b> next to Courses, or
+          “Add to course” on a channel page, pick videos, and the course page tracks how much of it
+          you have watched.</li>
+        <li><b>Mark all watched</b> clears the unread count for a whole category or channel without
+          flooding your history; clear the mark any time to bring the count back.</li>
+        <li><b>Feed filters</b> in the sidebar hide Shorts (under a minute) or show only unwatched
+          videos, across every feed at once.</li>
+        <li><b>Continue watching</b> pins your most recently watched videos at the top of the home feed.</li>
+        <li><b>Backup</b> — Export JSON downloads your hidden items, category moves, ratings, courses
+          and history; Import restores them (with Undo).</li>
+        <li>Channel pages show everything that channel has uploaded, newest first.</li>
+        <li>Search matches words in the title or the channel name.</li>
+        <li><b>Not interested</b> (⊘ on any card, or the button on the watch page) sinks a video in
+          every feed without hiding it; Undo brings it back. A video you leave after a few seconds
+          also counts for less in future rankings than one you watch through.</li>
+        <li><b>Similar channels</b> on every channel page comes from the topic graph: the channels
+          whose descriptions and titles sit closest to this one in vector space.</li>
+        <li>Videos play in YouTube's embedded player, so watch history and quality controls stay in your YouTube account.</li>
+      </ul>
+
+      <h2>Keyboard</h2>
+      <ul>
+        <li><kbd>Shift</kbd> + <kbd>N</kbd> — play a random video (or the next one while watching)</li>
+        <li><kbd>/</kbd> — jump to the search box</li>
+        <li><kbd>1</kbd>–<kbd>5</kbd> — rate the channel you're viewing</li>
+      </ul>
+
+      <h2>Recs Lab</h2>
+      <p>A temporal hold-out test of the recommender, run in this page. It trains on all but the
+        last fifth of your watch history, then replays those last watches and measures where the
+        engine would have ranked them — <b>Recall@10</b> (was it in the top ten), <b>NDCG@10</b>
+        (how high), <b>MRR</b>, catalogue <b>coverage</b> (distinct channels in the top 50) and
+        <b>intra-list diversity</b> — for the BM25-only baseline and the hybrid model. Relevance
+        is scored on the ranked list; coverage and diversity on the re-ranked feed, since MMR
+        deliberately trades a little relevance for variety.</p>
+      <p><button class="pill" id="runLab">Run evaluation</button></p>
+      <div id="labOut" class="labout"></div>
+
+      <h2>Data</h2>
+      <p>The channel list is parsed straight from
+        <code>Takeout 2/YouTube and YouTube Music/subscriptions/subscriptions.csv</code> — all
+        ${fmtNum(CH.length)} channels — and each channel's uploads are listed with
+        <a class="link" href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener">yt-dlp</a>
+        into one file, <code>site/videos.json</code>.${cap}</p>
+      <pre>python3 build.py                 # cached build
+python3 build.py --refresh       # re-download every listing
+python3 build.py --per-channel 0 # every upload, not just the latest 50</pre>
+      <h2>Your data</h2>
+      <p>Hidden channels, hidden videos, courses, category moves, star ratings and your watch history are stored only in this browser
+        (<code>localStorage</code>) and are never uploaded anywhere.
+        <button class="pill" id="tuneReco">Tune ranking</button>
+        <button class="pill" id="exportState" style="margin-left:8px">Export JSON</button>
+        <button class="pill" id="importStateBtn" style="margin-left:8px">Import</button>
+        <input type="file" id="importFile" accept=".json,application/json" hidden>
+        <button class="pill" id="resetAll" style="margin-left:8px">Reset everything</button></p>
+      <p class="muted">Export downloads a JSON backup of your hidden items, category moves, ratings, courses,
+        watch history and watched-marks; Import replaces your current state with a backup file (an Undo toast restores the old one).</p>
+      <p class="muted">Video titles, durations and view counts are a snapshot from the last build.
+        View counts and the videos themselves live on YouTube.</p>
+    </div>`;
+    const tune = $("#tuneReco", main);
+    if (tune) tune.onclick = openReco;
+    const lab = $("#runLab", main);
+    if (lab) lab.onclick = () => {
+      const out = $("#labOut", main);
+      lab.disabled = true;
+      lab.textContent = "Running…";
+      out.innerHTML = `<div class="muted">Training on the earlier watches, replaying the last ${12}…</div>`;
+      setTimeout(() => {
+        const r = evaluateEngine(12);
+        lab.disabled = false;
+        lab.textContent = "Run evaluation";
+        if (!r.ok) { out.innerHTML = `<div class="empty">${esc(r.msg)}</div>`; return; }
+        const pc = x => (x * 100).toFixed(1) + "%";
+        const dec = x => x.toFixed(3);
+        const delta = (b, h, fmt) => {
+          const d = h - b;
+          const good = d > 0.0005, bad = d < -0.0005;
+          return `<td class="${good ? "up" : bad ? "down" : ""}">${d > 0 ? "+" : ""}${fmt(Math.abs(d))}</td>`;
+        };
+        const line = (label, b, h, fmt) => `<tr><td>${label}</td><td>${fmt(b)}</td><td>${fmt(h)}</td>${delta(b, h, fmt)}</tr>`;
+        out.innerHTML = `<table class="metrics">
+          <thead><tr><th>Metric</th><th>BM25 baseline</th><th>Hybrid</th><th>Δ</th></tr></thead>
+          <tbody>
+            ${line("Candidate pool recall", r.base.candRecall, r.hybrid.candRecall, pc)}
+            ${line("Recall@10", r.base.recall, r.hybrid.recall, pc)}
+            ${line("NDCG@10", r.base.ndcg, r.hybrid.ndcg, dec)}
+            ${line("MRR", r.base.mrr, r.hybrid.mrr, dec)}
+            ${line("Channel coverage", r.base.coverage, r.hybrid.coverage, pc)}
+            ${line("Intra-list diversity", r.base.ild, r.hybrid.ild, dec)}
+          </tbody>
+        </table>
+        <p class="muted">${fmtNum(r.trained)} watches trained, ${fmtNum(r.tested)} replayed from the hold-out.
+          Read the numbers as a sanity check on one user, not a benchmark.</p>`;
+      }, 30);
+    };
+    const reset = $("#resetAll", main);
+    if (reset) reset.onclick = () => {
+      hiddenCh.clear(); hiddenVid.clear(); history = []; courses = [];
+      Object.keys(catOv).forEach(k => delete catOv[k]); saveCatOv();
+      ratings = {}; saveRatings();
+      seenAll.cats.clear(); seenAll.chs.clear(); saveSeen();
+      filters = { shorts: false, unwatched: false }; saveFilters();
+      reco = Object.assign({}, RECO_DEFAULTS); saveReco();
+      negIds.clear(); saveNeg();
+      bandit = {}; saveBandit();
+      resetRanker();
+      saveHidden(); store.set("history", history); saveCourses();
+      rebucket();
+      invalidateWatched();
+      renderSide(); route();
+      toast("Hidden channels, watch history, courses, category moves, ratings, watched marks and filters cleared.");
+    };
+    const exp = $("#exportState", main);
+    if (exp) exp.onclick = exportState;
+    const imp = $("#importStateBtn", main);
+    const impFile = $("#importFile", main);
+    if (imp) imp.onclick = () => impFile.click();
+    if (impFile) impFile.onchange = e => { if (e.target.files && e.target.files[0]) importState(e.target.files[0]); e.target.value = ""; };
+    document.title = "About - My Tube";
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------- ranking controls ---------- */
+  let rerankTimer = 0;
+  function scheduleRerank() {
+    clearTimeout(rerankTimer);
+    rerankTimer = setTimeout(() => {
+      const onForYou = (($("#sortChips .chip.on") || {}).textContent || "") === "For you";
+      if (location.hash.startsWith("#/watch/")) route();
+      else if ((location.hash === "" || location.hash === "#/") && onForYou) route();
+    }, 140);
+  }
+
+  function renderRecoBody() {
+    const body = $("#recoBody");
+    if (!body) return;
+    const row = (id, label, val, min, max, step, hint) => `<div class="tunerow">
+      <label for="${id}">${label} <b id="${id}Val">${val}</b></label>
+      <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${parseFloat(val)}">
+      <div class="hint">${hint}</div></div>`;
+    const learned = ranker
+      ? `Trained on ${fmtNum(ranker.pairs)} pairs · log-loss ${ranker.loss} · ${new Date(ranker.at).toLocaleDateString()}`
+      : "Not trained yet — the feed uses the hand-tuned weights below. Training takes about 30 ms and stays in this browser.";
+    body.innerHTML =
+      row("tAff", "Channel affinity", reco.affinity + "%", 0, 200, 10,
+        "How much a channel you keep watching is boosted above the topic score. 0% ignores channels and ranks purely by topic; 60% lets a favourite channel score up to 1.6×, 200% up to 3×.")
+      + row("tHalf", "History half-life", reco.halfLife + " days", 7, 365, 1,
+        "A watch this many days old counts half as much as a fresh one. Long means slow, stable taste; short means the feed mostly follows what you watched this week.")
+      + row("tWatched", "Already-watched weight", reco.watched + "%", 0, 100, 5,
+        "Already-watched videos keep this share of their score, so they sink down the feed but stay available. At 0% they drop to the bottom.")
+      + row("tSer", "Serendipity", reco.serendipity + "%", 0, 100, 10,
+        "How far the feed reaches outside your comfort zone. At 0% it stays strictly on-topic and a channel may appear three times in a row; at 100% it enforces one video per channel and boosts channels you have never watched.")
+      + `<div class="presets">${[["Balanced", 60, 90, 30, 30], ["Topic first", 0, 120, 30, 25],
+        ["Channel first", 160, 180, 60, 15], ["This week only", 60, 14, 30, 45]]
+        .map(([n, a, h, w, s]) => `<button class="pill" data-preset="${a},${h},${w},${s}">${n}</button>`).join("")}</div>`
+      + `<div class="tunerow"><label>Learned ranker <b>${ranker ? "on" : "off"}</b></label>
+          <div class="hint">${learned}</div>
+          <div class="presets">
+            <button class="pill" id="trainRank">${ranker ? "Retrain on my history" : "Train on my history"}</button>
+            ${ranker ? `<button class="pill" id="clearRank">Forget model</button>` : ""}
+          </div>
+          ${ranker ? `<div class="weights">${FEATURES.map((f, i) => `<span class="wchip">${f} <b>${ranker.w[i].toFixed(2)}</b></span>`).join("")}</div>` : ""}
+        </div>`;
+    const bind = (id, key, suffix) => {
+      const el = $("#" + id, body);
+      el.oninput = e => {
+        reco[key] = +e.target.value;
+        $("#" + id + "Val", body).textContent = e.target.value + suffix;
+        saveReco();
+        scheduleRerank();
+      };
+    };
+    bind("tAff", "affinity", "%");
+    bind("tHalf", "halfLife", " days");
+    bind("tWatched", "watched", "%");
+    bind("tSer", "serendipity", "%");
+    body.querySelectorAll("[data-preset]").forEach(b => b.onclick = () => {
+      const [affinity, halfLife, watched, serendipity] = b.dataset.preset.split(",").map(Number);
+      reco = { affinity, halfLife, watched, serendipity };
+      saveReco();
+      renderRecoBody();
+      scheduleRerank();
+    });
+    const train = $("#trainRank", body);
+    if (train) train.onclick = () => {
+      train.disabled = true;
+      train.textContent = "Training…";
+      setTimeout(() => {
+        const r = trainRanker();
+        if (r.ok) {
+          toast(`Ranker trained on ${fmtNum(r.pairs)} pairs — your feed now uses learned weights.`);
+          renderRecoBody();
+          scheduleRerank();
+        } else {
+          toast(r.msg);
+          renderRecoBody();
+        }
+      }, 20);
+    };
+    const clear = $("#clearRank", body);
+    if (clear) clear.onclick = () => {
+      resetRanker();
+      renderRecoBody();
+      scheduleRerank();
+      toast("Learned weights forgotten — back to the hand-tuned model.");
+    };
+  }
+
+  function openReco() {
+    renderRecoBody();
+    $("#recoModal").hidden = false;
+  }
+  function closeReco() { $("#recoModal").hidden = true; }
+
+  /* ---------- courses ---------- */
+  let picker = null;
+
+  const newCourseId = () => "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  const courseVideos = course => course.videos.map(id => byId.get(id)).filter(Boolean);
+  function courseStats(course) {
+    const vids = courseVideos(course);
+    const watched = watchedSet();
+    const done = vids.filter(v => watched.has(v.id)).length;
+    const hours = vids.reduce((s, v) => s + (v.dur || 0), 0) / 3600;
+    return { vids, done, hours, pct: vids.length ? Math.round((done / vids.length) * 100) : 0 };
+  }
+
+  function renderCourses() {
+    const host = $("#courseList");
+    if (!host) return;
+    host.innerHTML = courses.length
+      ? courses.map(c => {
+          const { vids, done, pct } = courseStats(c);
+          return `<a class="item course" href="#/course/${c.id}" data-route="course/${c.id}">
+            <svg class="nav" viewBox="0 0 24 24"><path d="M5 3h11l4 4v14H5V3zm2 5h7v2H7V8zm0 4h10v2H7v-2zm0 4h7v2H7v-2z"/></svg>
+            <span class="name">${esc(c.name)}<span class="csub">${fmtNum(vids.length)} videos · ${pct}% watched</span></span>
+            <span class="cnt">${done}/${vids.length}</span></a>`;
+        }).join("")
+      : `<div class="sideempty">No courses yet. Hit <b>+</b> to build one from any channel.</div>`;
+    markSide(routeFromHash());
+  }
+
+  function renderPickList() {
+    const list = $("#cmList");
+    if (!list || !picker) return;
+    const term = (picker.term || "").trim().toLowerCase();
+    const base = picker.channel === "" ? V : byChannel[+picker.channel] || [];
+    const pool = term
+      ? base.filter(v => v.title.toLowerCase().includes(term) || CH[v.ch].name.toLowerCase().includes(term))
+      : base;
+    const shown = pool.slice(0, 60);
+    list.innerHTML = shown.length
+      ? shown.map(v => `<label class="pickrow">
+          <input type="checkbox" data-pick="${v.id}" ${picker.selected.has(v.id) ? "checked" : ""}>
+          <img src="${thumbURL(v.id)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
+          <span class="t">${esc(v.title)}</span>
+          <span class="c">${esc(CH[v.ch].name)}</span>
+        </label>`).join("")
+        + (pool.length > shown.length ? `<div class="sideempty">${fmtNum(pool.length - shown.length)} more — type to narrow</div>` : "")
+      : `<div class="sideempty" style="padding:14px 2px">No videos match.</div>`;
+    updatePickCount();
+  }
+
+  function updatePickCount() {
+    const n = picker ? picker.selected.size : 0;
+    const el = $("#cmCount");
+    if (el) el.textContent = `${fmtNum(n)} selected`;
+  }
+
+  function openCourseModal(course, opts = {}) {
+    picker = {
+      course: course || null,
+      selected: new Set(course ? course.videos : []),
+      channel: opts.channel != null ? String(opts.channel) : "",
+      term: "",
+    };
+    if (opts.video) picker.selected.add(opts.video);
+    $("#cmTitle").textContent = course ? "Edit course" : "New course";
+    $("#cmSave").textContent = course ? "Save changes" : "Create course";
+    $("#cmBody").innerHTML = `
+      <input id="cmName" type="text" maxlength="80" autocomplete="off" placeholder="Course name — e.g. Linear algebra from scratch" value="${course ? esc(course.name) : ""}">
+      <div class="pickerrow">
+        <input id="cmSearch" type="search" autocomplete="off" placeholder="Search videos to add">
+        <select id="cmChannel" aria-label="Filter videos by channel">
+          <option value="">All channels</option>
+          ${CH.slice().sort((a, b) => b.n - a.n).map(c => `<option value="${c.i}">${esc(c.name)}</option>`).join("")}
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button class="pill" type="button" id="cmAll">Select all shown</button>
+        <button class="pill" type="button" id="cmNone">Clear</button>
+      </div>
+      <div class="picklist" id="cmList"></div>`;
+    $("#cmChannel").value = picker.channel;
+    $("#courseModal").hidden = false;
+    $("#cmSearch").oninput = e => { picker.term = e.target.value; renderPickList(); };
+    $("#cmChannel").onchange = e => { picker.channel = e.target.value; renderPickList(); };
+    $("#cmList").onchange = e => {
+      const box = e.target.closest("[data-pick]");
+      if (!box) return;
+      if (box.checked) picker.selected.add(box.dataset.pick);
+      else picker.selected.delete(box.dataset.pick);
+      updatePickCount();
+    };
+    $("#cmAll").onclick = () => {
+      document.querySelectorAll("#cmList [data-pick]").forEach(b => { b.checked = true; picker.selected.add(b.dataset.pick); });
+      updatePickCount();
+    };
+    $("#cmNone").onclick = () => {
+      picker.selected.clear();
+      document.querySelectorAll("#cmList [data-pick]").forEach(b => { b.checked = false; });
+      updatePickCount();
+    };
+    renderPickList();
+  }
+
+  function closeCourseModal() {
+    $("#courseModal").hidden = true;
+    picker = null;
+  }
+
+  function saveCourseFromModal() {
+    if (!picker) return;
+    const name = $("#cmName").value.trim();
+    if (!name) { $("#cmName").focus(); toast("Give the course a name first."); return; }
+    const videos = [...picker.selected];
+    let target = picker.course;
+    const created = !target;
+    if (target) { target.name = name; target.videos = videos; }
+    else { target = { id: newCourseId(), name, videos, created: Date.now() }; courses.push(target); }
+    saveCourses();
+    closeCourseModal();
+    renderCourses();
+    if (created) location.hash = `#/course/${target.id}`;
+    else if (location.hash === `#/course/${target.id}`) route();
+    toast(`“${target.name}” ${created ? "created" : "saved"} — ${fmtNum(videos.length)} video${videos.length === 1 ? "" : "s"}.`);
+  }
+
+  function viewCourse(id) {
+    const course = courses.find(c => c.id === id);
+    if (!course) {
+      main.innerHTML = `<div class="empty">Course not found. <a class="link" href="#/">Back to All videos</a></div>`;
+      document.title = "Course - My Tube";
+      return;
+    }
+    const { vids, done, hours, pct } = courseStats(course);
+    const time = hours >= 1 ? `${Math.round(hours)} hours` : `${Math.round(hours * 60)} minutes`;
+    main.innerHTML = `<div class="chhead">
+      <div style="min-width:0">
+        <h1>${esc(course.name)}</h1>
+        <div class="sub">${fmtNum(vids.length)} videos · ${time} · ${done} watched (${pct}%)</div>
+        <div class="coursebar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="Course progress"><div style="width:${pct}%"></div></div>
+        <div class="actions">
+          <button class="pill primary" id="addVids">＋ Add videos</button>
+          <button class="pill" id="editCourse">Edit course</button>
+          <button class="pill" id="deleteCourse">Delete</button>
+        </div>
+      </div></div>
+      <div class="feed"></div>`;
+    const feed = $(".feed", main);
+    let grid = null;
+    const build = () => {
+      grid && grid.stop();
+      feed.replaceChildren();
+      let pos = 0;
+      grid = infiniteGrid(feed, n => vids.slice(pos, pos += n), {
+        empty: "No videos in this course yet — use “Add videos” to pull them from any channel.",
+        watched: watchedSet(),
+      });
+    };
+    $("#addVids").onclick = () => openCourseModal(course);
+    $("#editCourse").onclick = () => openCourseModal(course);
+    $("#deleteCourse").onclick = () => {
+      if (!confirm(`Delete “${course.name}”?`)) return;
+      const backup = courses;
+      courses = courses.filter(c => c.id !== course.id);
+      saveCourses();
+      location.hash = "#/";
+      renderCourses();
+      toast("Course deleted.", "Undo", () => { courses = backup; saveCourses(); renderCourses(); });
+    };
+    build();
+    document.title = course.name + " - My Tube";
+    window.scrollTo(0, 0);
+    cleanup = () => grid && grid.stop();
+  }
+
+  /* ---------- router ---------- */
+  function route() {
+    cleanup(); cleanup = () => {};
+    const h = location.hash.replace(/^#\/?/, "");
+    const m = {};
+    if (!h.startsWith("search/")) $("#q").value = "";
+    $("#aboutBtn").classList.toggle("active", h === "about");
+    if ((m.watch = h.match(/^watch\/([\w-]{11})$/))) { markSide(""); viewWatch(m.watch[1]); }
+    else if ((m.ch = h.match(/^c\/(\d+)$/))) { markSide(`c/${m.ch[1]}`); viewChannel(+m.ch[1]); }
+    else if ((m.search = h.match(/^search\/(.*)$/))) { markSide(""); viewSearch(decodeURIComponent(m.search[1])); }
+    else if ((m.cat = h.match(/^t\/([\w-]+)$/))) { markSide(`t/${m.cat[1]}`); viewCat(m.cat[1]); }
+    else if ((m.course = h.match(/^course\/([\w-]+)$/))) { markSide(`course/${m.course[1]}`); viewCourse(m.course[1]); }
+    else if (h === "about") { markSide("about"); viewAbout(); }
+    else { markSide("home"); viewHome(); }
+    renderCategories(); // refresh the chip badges after history changes
+  }
+
+  /* ---------- boot ---------- */
+  function boot() {
+    if (!data || !Array.isArray(data.videos) || !data.videos.length) {
+      main.innerHTML = `<div class="empty">No video data yet. Run <code>python3 build.py</code> to generate <code>site/data.js</code>.</div>`;
+      return;
+    }
+    CH = data.channels.map((c, i) => ({ ...c, i }));
+    byChannel = CH.map(() => []);
+    V = data.videos.map(([id, title, dur, views, ch], ix) => ({ id, title, dur, views, ch, ix }));
+    for (const v of V) { (byChannel[v.ch] || (byChannel[v.ch] = [])).push(v); byId.set(v.id, v); }
+    $("#q").placeholder = `Search ${fmtNum(V.length)} videos`;
+    renderSide();
+    window.addEventListener("hashchange", route);
+    route();
+  }
+  boot();
+
+  /* ---------- chrome ---------- */
+  $("#searchForm").onsubmit = e => {
+    e.preventDefault();
+    const q = $("#q").value.trim();
+    location.hash = q ? `#/search/${encodeURIComponent(q)}` : "#/";
+  };
+  $("#themeBtn").onclick = () => {
+    const root = document.documentElement;
+    const isLight = root.dataset.theme ? root.dataset.theme === "light" : matchMedia("(prefers-color-scheme: light)").matches;
+    root.dataset.theme = isLight ? "dark" : "light";
+    try { localStorage.setItem("jeetube-theme", root.dataset.theme); } catch {}
+  };
+  $("#luckyBtn").onclick = () => {
+    if (!V.length) return;
+    location.hash = `#/watch/${V[Math.random() * V.length | 0].id}`;
+  };
+  $("#cmSave").onclick = saveCourseFromModal;
+  $("#cmCancel").onclick = closeCourseModal;
+  $("#courseModal").addEventListener("click", e => { if (e.target.id === "courseModal") closeCourseModal(); });
+  $("#recoDone").onclick = closeReco;
+  $("#recoDefaults").onclick = () => {
+    reco = Object.assign({}, RECO_DEFAULTS);
+    saveReco(); renderRecoBody(); scheduleRerank();
+    toast("Ranking back to its defaults.");
+  };
+  $("#recoModal").addEventListener("click", e => { if (e.target.id === "recoModal") closeReco(); });
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Escape") return;
+    if (picker) closeCourseModal();
+    else if (!$("#recoModal").hidden) closeReco();
+  });
+  // Channel links inside cards (anchors can't nest, so these are spans). The hide and
+  // course controls are handled first so they never navigate.
+  document.addEventListener("click", e => {
+    const notint = e.target.closest("[data-notint]");
+    if (notint) {
+      e.preventDefault(); e.stopPropagation();
+      const v = byId.get(notint.dataset.notint);
+      if (v) {
+        markNotInterested(v);
+        const wrap = notint.closest(".cardwrap");
+        if (wrap) wrap.remove(); else route();
+      }
+      return;
+    }
+    const hideV = e.target.closest("[data-hidevid]");
+    if (hideV) {
+      e.preventDefault(); e.stopPropagation();
+      const v = byId.get(hideV.dataset.hidevid);
+      if (v) hideVideo(v, hideV);
+      return;
+    }
+    const hideCat = e.target.closest("[data-hidecat]");
+    if (hideCat) {
+      e.preventDefault(); e.stopPropagation();
+      toggleCategory(hideCat.dataset.hidecat);
+      return;
+    }
+    const hideC = e.target.closest("[data-hidech]");
+    if (hideC) {
+      e.preventDefault(); e.stopPropagation();
+      toggleChannel(+hideC.dataset.hidech);
+      return;
+    }
+    const add = e.target.closest("[data-course]");
+    if (add) {
+      e.preventDefault(); e.stopPropagation();
+      openCourseModal(null, { channel: +add.dataset.course, video: add.dataset.video });
+      return;
+    }
+    const t = e.target.closest("[data-href]");
+    if (t) { e.preventDefault(); e.stopPropagation(); location.hash = t.dataset.href; return; }
+    // Click feedback for the shelf bandit: which row earned the click?
+    const shelf = e.target.closest("[data-shelf]");
+    if (shelf && e.target.closest("a[data-vid]")) shelfClick(shelf.dataset.shelf);
+  }, true);
+
+  document.addEventListener("keydown", e => {
+    if (e.target.matches("input, textarea")) return;
+    const cm = location.hash.match(/^#\/c\/(\d+)$/);
+    if (cm && /^[1-5]$/.test(e.key)) { const c = CH[+cm[1]]; if (c) setRating(c, +e.key); return; }
+    if (e.key === "N" && e.shiftKey) {
+      e.preventDefault();
+      if (location.hash.startsWith("#/watch/")) playNext();
+      else if (V.length) location.hash = `#/watch/${V[Math.random() * V.length | 0].id}`;
+    }
+    if (e.key === "/") { e.preventDefault(); $("#q").focus(); }
+  });
+  window.addEventListener("scroll", () => {
+    $("#hdr").classList.toggle("scrolled", window.scrollY > 2);
+  }, { passive: true });
+})();
+</script>
+</body>
+</html>
