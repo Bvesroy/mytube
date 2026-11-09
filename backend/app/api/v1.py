@@ -20,6 +20,7 @@ from app.repositories.library import (
     channel_by_yt_id,
     video_by_yt_id,
 )
+from app.services.importer import import_channels
 from app.repositories.user_state import export_state
 from app.schemas import (
     ChannelSummary,
@@ -53,7 +54,7 @@ def health() -> dict:
 def settings_view() -> UserSettingsOut:
     s = get_settings()
     return UserSettingsOut(
-        data_dir=s.data_dir,
+        data_dir=str(s.data_dir),
         host=s.host,
         port=s.port,
         requires_auth=s.requires_auth,
@@ -101,6 +102,8 @@ def channel_detail(
         available_only=True,
         sort="recent",
     )
+    from sqlalchemy import func as _func
+    video_count = int(session.scalar(select(_func.count(Video.id)).where(Video.channel_id == ch.id)) or 0)
     return {
         "id": ch.yt_id,
         "name": ch.name,
@@ -108,7 +111,7 @@ def channel_detail(
         "avatar_url": ch.avatar_url,
         "description": ch.description,
         "subscriber_count": ch.subscriber_count,
-        "video_count": int(session.scalar(select(Video.id).where(Video.channel_id == ch.id)) or 0),
+        "video_count": video_count,
         "videos": [_video_summary(v, ch) for v, _c in videos[:200]],
     }
 
@@ -178,13 +181,15 @@ def stats(
 def categories(
     request: Request,
 ):
+    from sqlalchemy import func as _func
     session = get_db(request)
     rows = session.scalars(select(Category).order_by(Category.position)).all()
     out: list[dict] = []
     for cat in rows:
         count = int(
             session.scalar(
-                select(Video.id)
+                select(_func.count(Video.id))
+                .select_from(Video)
                 .join(Channel, Channel.id == Video.channel_id)
                 .where(Channel.category_id == cat.id, Video.is_available == 1)
             )
@@ -215,11 +220,11 @@ def recommends(
         user_id=body.user_id,
         items=[
             RecommendationItem(
-                id=i.video_id,
-                title=i.title,
-                duration_s=i.duration_s,
-                view_count=i.view_count,
-                thumbnail_url=i.thumbnail_url,
+                id=i.video.yt_id,
+                title=i.video.title,
+                duration_s=i.video.duration_s,
+                view_count=i.video.view_count,
+                thumbnail_url=i.video.thumbnail_url,
                 channel=_channel_summary(i.channel) if i.channel else None,
                 score=round(i.score, 3),
                 reason=explainer.explain(i, i.features),
@@ -241,12 +246,12 @@ def job_status(
         raise HTTPException(status_code=404, detail="job not found")
     return JobStatus(
         id=job.id,
-        type=job.job_type,
-        title=job.title,
+        type=job.type,
+        title=None,
         status=job.status,
         progress=job.progress,
         stage=job.stage,
-        result=json.loads(job.result) if job.result else None,
+        result=json.loads(job.result_json) if job.result_json else None,
         error=job.error,
         created_at=job.created_at,
         started_at=job.started_at,
@@ -267,19 +272,17 @@ def job_list(
             )
         ).all()
     else:
-        rows = session.scalars(
-            select(BackgroundJob).where(BackgroundJob.status == "success")
-        ).all()
+        rows = session.scalars(select(BackgroundJob).where(BackgroundJob.status == status)).all()
     return {
         "jobs": [
             JobStatus(
                 id=j.id,
-                type=j.job_type,
-                title=j.title,
+                type=j.type,
+                title=None,
                 status=j.status,
                 progress=j.progress,
                 stage=j.stage,
-                result=json.loads(j.result) if j.result else None,
+                result=json.loads(j.result_json) if j.result_json else None,
                 error=j.error,
                 created_at=j.created_at,
                 started_at=j.started_at,

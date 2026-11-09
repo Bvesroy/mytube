@@ -21,8 +21,14 @@ def _engine_factory(settings: Settings) -> Database:
 
 
 def get_db(request: Request) -> Session:
+    """Return a request-scoped session. Stored on request.state for cleanup."""
+    if hasattr(request.state, "db_session") and request.state.db_session is not None:
+        return request.state.db_session
     db: Database = request.app.state.db
-    return db.session()
+    session = db.session_factory()
+    request.state.db_session = session
+    return session
+
 
 
 def get_settings_dep() -> Settings:

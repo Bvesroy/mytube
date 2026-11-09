@@ -32,7 +32,7 @@ A local-first FastAPI + SQLite backend skeleton exists in `backend/` alongside t
 | Search | FTS5 search returns relevant hits for imported content | ✅ |
 | Recommendations | Scoring/weights primitives preserved; service interface exists | ✅ (core) |
 | Jobs | DB job model + service scaffolding present | ⚠️ partial |
-| Tests | Automated tests cover migrations, importer, search, domain primitives | ✅ (7 tests, core) |
+| Tests | Automated tests cover migrations, importer, search, domain primitives, and API integration smoke | ✅ (22 tests, core+API) |
 | Docs | Audit, architecture, DB, API, roadmap docs present | ✅ |
 
 ## Next milestones

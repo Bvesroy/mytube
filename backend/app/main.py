@@ -23,7 +23,8 @@ async def lifespan(app: FastAPI):
     database = None
     try:
         from app.db.engine import Database
-        database = Database(settings.db_path)
+        database = Database.open(settings.db_path)
+        database.migrate()
         app.state.db = database
         yield
     finally:
@@ -58,7 +59,16 @@ def make_app(settings: Settings | None = None) -> FastAPI:
     async def request_id_middleware(request: Request, call_next):
         rid = request.headers.get("x-request-id") or str(uuid.uuid4())[:12]
         request.state.request_id = rid
-        response = await call_next(request)
+        request.state.db_session = None
+        try:
+            response = await call_next(request)
+        finally:
+            session = getattr(request.state, "db_session", None)
+            if session is not None:
+                try:
+                    session.close()
+                except Exception:
+                    pass
         response.headers["x-request-id"] = rid
         return response
 
