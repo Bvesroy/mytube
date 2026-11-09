@@ -69,7 +69,7 @@
 **Verified (backend):** `backend/tests/test_jobs.py` (5 tests) + full backend suite **38 passed** (`cd backend && python3 -m pytest tests/ -v`).
 
 **Implemented:**
-- [x] Coherent DB-backed job service aligned to `BackgroundJob` (`enqueue`/`claim`/`heartbeat`/`cancel`/`finish`/`fail_or_retry`/`recover_stale`/list).
+- [x] Coherent DB-backed job service aligned to `BackgroundJob` (`enqueue`/`claim`/`heartbeat`/`cancel`/`finish`/`fail_or_retry`/`recover_stale`/list); `sync_import` records best-effort `ChannelSyncState`/`IngestionRun`.
 - [x] `sync_import` handler: **incremental/idempotent** sync via existing importer upserts from supplied channel payloads (no network, no undocumented YouTube APIs). Verifies DB state/idempotency in tests.
 - [x] `sync_ytdlp` adapter hook: **truthful** — reports unavailable/not-enabled rather than pretending; never collects passwords/cookies or uses undocumented APIs.
 - [x] API: `POST /jobs/sync`, `GET/POST /jobs/{id}` (+ cancel/retry), `GET /jobs`; progress/status fields exposed.
@@ -81,15 +81,17 @@
 
 ### Phase 6 — Frontend adapter + settings + safe localStorage migration (PARTIAL)
 - [x] Phase 3/5 backend bridge extended in `site/index.html` (best-effort, non-breaking): `window.MyTubeBackend` exposes history/preferences + `enqueueSync/getJob/cancelJob` adapter hooks; standalone/localStorage fallback preserved.
+- [x] **Safe localStorage migration endpoint implemented (backend):** `POST /api/v1/user/state` applies `LocalStorageState` via idempotent mapping (known entities only; **never claims YouTube history confirmed**). `export_state` fixed; verified by `tests/test_user_state_import.py`.
 - [x] Playback/history preference and truthful external/embedded behavior remain integrated (Phase 3).
-- [ ] **Complete** frontend data-access adapter and **safe full localStorage migration** (contracts partially stable; full migration not implemented/verified this session).
+- [ ] **Complete** frontend data-access adapter and explicit frontend-side migration UX/wiring (backend import exists; full end-to-end UI flow not implemented/verified this session).
 - [ ] Frontend/backend recommender/search unification (frontend still has separate scoring logic).
 
 ### Phase 7 — Security/perf/release readiness (PARTIAL)
 - [x] Local-first defaults: loopback bind in config; minimal middleware enforces `MYTUBE_API_TOKEN` for `/api/*` when configured (health exempt). Operators should set token before non-loopback/LAN exposure.
 - [ ] Full non-loopback auth/CSRF posture review, LAN smoke tests, rate/abuse controls.
 - [ ] **Performance benchmarks** (import/search/recommend at target scale) — **not measured**; no performance claims made.
-- [ ] Backup/restore automation and release packaging/readiness + full quality-gate evidence (strict gate currently **BLOCKED** without supplied test/build/artifact reports).
+- [x] Minimal local backup script: `backend/scripts/backup_db.py` (SQLite online backup/copy; no destructive changes). 
+- [ ] Full backup/restore automation, packaging/release readiness + full quality-gate evidence (strict gate **BLOCKED** without supplied reports).
 
 ### Constraints honored
 - No changes to `site/`, `build.py`, `.cache/` in this phase.
