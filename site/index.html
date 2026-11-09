@@ -486,7 +486,55 @@ table.metrics td.down { color: var(--brand); font-weight: 700; }
   const saveReco = () => store.set("reco", reco);
   // Feed filters: Hide Shorts (<60s) and/or only unwatched videos, across every feed.
   let filters = Object.assign({ shorts: false, unwatched: false }, store.get("filters", {}));
+
   const saveFilters = () => store.set("filters", filters);
+
+  /* ---------- backend bridge (Phase 2/3): best-effort, preserves standalone mode ---------- */
+  const Backend = (() => {
+    let ok = null, prefs = null;
+    const base = '/api/v1';
+    async function ping() {
+      if (ok !== null) return ok;
+      try { const r = await fetch(base + '/health', { cache: 'no-store' }); ok = r.ok; } catch { ok = false; }
+      return ok;
+    }
+    async function api(path, opts) {
+      if (!(await ping())) return null;
+      try {
+        const r = await fetch(base + path, Object.assign({ headers: { 'Content-Type': 'application/json' } }, opts || {}));
+        if (!r.ok) return null;
+        return await r.json().catch(() => ({}));
+      } catch { return null; }
+    }
+    async function getPrefs() {
+      if (prefs) return prefs;
+      const d = await api('/user/preferences');
+      prefs = (d && d.preferences) || { playback_mode: store.get('playback-mode', 'embedded') };
+      return prefs;
+    }
+    async function setPlaybackMode(mode) {
+      prefs = Object.assign({}, await getPrefs(), { playback_mode: mode });
+      store.set('playback-mode', mode);
+      await api('/user/preferences', { method: 'PUT', body: JSON.stringify({ playback_mode: mode }) });
+      return prefs;
+    }
+    function modeSync() { return store.get('playback-mode', 'embedded'); }
+    // Phase 2 history (truthful): external_youtube = initiation only, never confirmed YouTube history.
+    async function historyStart(videoId, source, sessionId, positionS) {
+      return api('/history/start', { method: 'POST', body: JSON.stringify({ video_id: videoId, playback_source: source, session_id: sessionId, position_s: positionS || 0 }) });
+    }
+    async function historyProgress(sessionId, data) {
+      return api('/history/progress', { method: 'POST', body: JSON.stringify(Object.assign({ session_id: sessionId }, data || {})) });
+    }
+    async function historyComplete(sessionId, data) {
+      return api('/history/complete', { method: 'POST', body: JSON.stringify(Object.assign({ session_id: sessionId }, data || {})) });
+    }
+    // per-watch session state
+    const sessions = new Map(); // videoId -> {id, source, lastPos, lastSent}
+    function sid() { return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+    return { ping, api, getPrefs, setPlaybackMode, modeSync, historyStart, historyProgress, historyComplete, sessions, sid };
+  })();
+
   // Categories/channels marked entirely watched, without flooding the 800-entry history
   // with one entry per video. Their videos count as watched until the mark is cleared.
   let seenAll = (() => {
@@ -1570,10 +1618,22 @@ table.metrics td.down { color: var(--brand); font-weight: 700; }
     if (idx < 0) return;
     const h = history[idx];
     const w = ended ? 1.4 : Math.min(1.3, Math.max(0.3, (seconds || 0) / 120));
-    if (Math.abs((h.w || 1) - w) < 0.05) return;
-    h.w = +w.toFixed(2);
-    store.set("history", history);
-    invalidateReco();
+    if (Math.abs((h.w || 1) - w) < 0.05) {
+      // still report to backend best-effort
+    } else {
+      h.w = +w.toFixed(2);
+      store.set("history", history);
+      invalidateReco();
+    }
+    // Backend Phase 2/3 (best-effort): record My Tube progress/completion. For external mode, completion is not confirmed YouTube history.
+    try {
+      const st = Backend.sessions.get(id);
+      if (st && st.id) {
+        if (ended) Backend.historyComplete(st.id, { position_s: seconds || st.lastPos || 0, watched_s: seconds || 0, completed: st.source !== 'external_youtube' ? true : false });
+        else Backend.historyProgress(st.id, { position_s: seconds || 0, watched_delta_s: Math.max(0, (seconds || 0) - (st.lastPos || 0)) });
+        st.lastPos = seconds || st.lastPos || 0;
+      }
+    } catch {}
   }
 
   function markNotInterested(v) {
@@ -2275,15 +2335,24 @@ table.metrics td.down { color: var(--brand); font-weight: 700; }
     const v = byId.get(id);
     if (!v) { main.innerHTML = `<div class="empty">Video not found.</div>`; return; }
     const c = CH[v.ch];
+    const playbackMode = Backend.modeSync();
     remember(v);
-    upNext = similarTo(v, 15); // hybrid: topic vectors + channel graph + what usually follows
+    upNext = similarTo(v, 15);
     const prof = profile();
     const whyUp = new Map();
     for (const x of upNext) if (x.ix != null) whyUp.set(x.id, explain(x.ix, prof));
 
+    const ytUrl = `https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}`;
+    const isExternal = playbackMode === 'external_youtube';
+    const truthNote = isExternal
+      ? `<div class="desc" style="margin-top:10px;border-left:3px solid var(--accent,#2563eb);padding-left:10px"><strong>External playback:</strong> Opens in your browser/YouTube profile. My Tube records that you opened it here (initiation only). It <strong>cannot</strong> confirm or sync your YouTube account watch history.</div>`
+      : `<div class="desc" style="margin-top:10px;border-left:3px solid var(--border,#ddd);padding-left:10px">Embedded playback uses the YouTube player. My Tube records its own watch history when the backend is available; YouTube account history is managed separately by YouTube.</div>`;
+
     main.innerHTML = `<div class="watch">
       <div class="primary">
-        <div class="player"><div id="ytplayer"></div></div>
+        ${isExternal
+          ? `<div class="player" style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:24px;text-align:center"><div style="font-size:18px;font-weight:600">Open on YouTube</div><div style="color:var(--muted,#666);max-width:560px">This video will open in your browser so YouTube can use your account/profile there. My Tube will record the open action, but not confirmed YouTube watch history.</div><button class="pill primary" id="openYtBtn">Open on YouTube ↗</button></div>`
+          : `<div class="player"><div id="ytplayer"></div></div>`}
         <h1>${esc(v.title)}</h1>
         <div class="chrow">${avatar(c, "lg")}
           <div style="min-width:0">
@@ -2292,7 +2361,7 @@ table.metrics td.down { color: var(--brand); font-weight: 700; }
           </div>
           <div class="actions">
             <button class="pill primary" id="nextBtn" title="Next video (Shift+N)">Next video ⏭</button>
-            <a class="pill" href="https://www.youtube.com/watch?v=${v.id}" target="_blank" rel="noopener">YouTube ↗</a>
+            <a class="pill" href="${ytUrl}" target="_blank" rel="noopener" id="ytDirectLink">YouTube ↗</a>
             <button class="pill" data-course="${c.i}" data-video="${v.id}">＋ Course</button>
             <button class="pill" data-hidevid="${v.id}">Hide</button>
             <button class="pill${negIds.has(v.id) ? " primary" : ""}" data-notint="${v.id}">${negIds.has(v.id) ? "Not interested ✓" : "Not interested"}</button>
@@ -2302,6 +2371,15 @@ table.metrics td.down { color: var(--brand); font-weight: 700; }
           <div class="stats">${[fmtViews(v.views), v.dur ? fmtDur(v.dur) : ""].filter(Boolean).join(" · ") || "—"}</div>
           <div class="tagline">${esc(c.name)}${c.desc ? " · " + esc(c.desc) : ""}</div>
         </div>
+        <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <label style="display:inline-flex;gap:8px;align-items:center"><span>Playback mode</span>
+            <select id="playbackModeSel">
+              <option value="embedded"${!isExternal ? ' selected' : ''}>Embedded (track in My Tube)</option>
+              <option value="external_youtube"${isExternal ? ' selected' : ''}>Open on YouTube (initiation only)</option>
+            </select>
+          </label>
+        </div>
+        ${truthNote}
       </div>
       <aside class="secondary">
         <h3>Up next</h3>
@@ -2315,10 +2393,47 @@ table.metrics td.down { color: var(--brand); font-weight: 700; }
       autoplay = e.target.checked;
       try { localStorage.setItem("jeetube-autoplay", autoplay ? "1" : "0"); } catch {}
     };
+    const modeSel = $("#playbackModeSel");
+    if (modeSel) modeSel.onchange = async e => {
+      const m = e.target.value;
+      store.set('playback-mode', m);
+      await Backend.setPlaybackMode(m);
+      viewWatch(id);
+    };
     document.title = v.title + " - My Tube";
     window.scrollTo(0, 0);
 
     let ended = false;
+    let progressTimer = null;
+    const sessionId = Backend.sid();
+    Backend.sessions.set(id, { id: sessionId, source: isExternal ? 'external_youtube' : 'embedded', lastPos: 0, lastSent: Date.now() });
+
+    async function startBackendSession(source) {
+      // Best-effort: requires backend + known video in library. Failure preserves local behavior.
+      const r = await Backend.historyStart(id, source, sessionId, 0);
+      if (r && r.session_id) { Backend.sessions.get(id).id = r.session_id; }
+    }
+
+    if (isExternal) {
+      const openBtn = $("#openYtBtn");
+      const openExternal = async () => {
+        await startBackendSession('external_youtube'); // initiation recorded; NOT confirmed YouTube history
+        window.open(ytUrl, '_blank', 'noopener');
+        toast('Opened on YouTube. My Tube recorded initiation only (no confirmed YouTube sync).');
+      };
+      if (openBtn) openBtn.onclick = openExternal;
+      // clicking the direct link also records initiation
+      const direct = $("#ytDirectLink");
+      if (direct) direct.addEventListener('click', () => { startBackendSession('external_youtube'); });
+      cleanup = () => {
+        try { /* no player */ } catch {}
+        Backend.sessions.delete(id);
+      };
+      return;
+    }
+
+    // Embedded mode
+    startBackendSession('embedded');
     loadYT().then(() => {
       if (location.hash !== `#/watch/${id}`) return;
       player = new YT.Player("ytplayer", {
@@ -2326,6 +2441,16 @@ table.metrics td.down { color: var(--brand); font-weight: 700; }
         playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1 },
         events: {
           onStateChange: e => {
+            if (e.data === YT.PlayerState.PLAYING) {
+              if (!progressTimer) progressTimer = setInterval(() => {
+                try {
+                  if (!player || !player.getCurrentTime) return;
+                  const secs = player.getCurrentTime() || 0;
+                  const st = Backend.sessions.get(id);
+                  if (st && st.id) Backend.historyProgress(st.id, { position_s: secs, watched_delta_s: 5 });
+                } catch {}
+              }, 5000);
+            }
             if (e.data === YT.PlayerState.ENDED) {
               ended = true;
               rememberEngagement(id, 0, true);
@@ -2338,9 +2463,11 @@ table.metrics td.down { color: var(--brand); font-weight: 700; }
     cleanup = () => {
       let secs = 0;
       try { if (player && player.getCurrentTime) secs = player.getCurrentTime() || 0; } catch {}
-      rememberEngagement(id, secs, ended);   // how much you watched weights this video in future rankings
+      if (progressTimer) try { clearInterval(progressTimer); } catch {}
+      rememberEngagement(id, secs, ended);
       try { player && player.destroy(); } catch {}
       player = null;
+      Backend.sessions.delete(id);
     };
   }
 

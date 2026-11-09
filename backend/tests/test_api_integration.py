@@ -106,3 +106,13 @@ def test_jobs_list(client):
 def test_unknown_channel_404(client):
     r = client.get("/api/v1/channels/UC_DOES_NOT_EXIST_XYZ")
     assert r.status_code == 404
+
+
+def test_preferences_playback_mode(client):
+    r = client.get("/api/v1/user/preferences")
+    assert r.status_code == 200
+    assert r.json()["preferences"].get("playback_mode") in ("embedded", "external_youtube")
+    r2 = client.put("/api/v1/user/preferences", json={"playback_mode": "external_youtube"})
+    assert r2.status_code == 200
+    r3 = client.get("/api/v1/user/preferences")
+    assert r3.json()["preferences"]["playback_mode"] == "external_youtube"

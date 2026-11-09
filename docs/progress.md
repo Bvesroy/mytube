@@ -39,8 +39,22 @@
 - [ ] History import/migration path from existing frontend `localStorage` `mytube-history` (deferred to Phase 6 adapter; schema/service supports it).
 - [ ] Full LAN/non-loopback destructive-endpoint protection integration (follow existing local-access/auth model; not newly invented).
 
-### Phase 3–7
-- Phase 3: Playback integration (embedded IFrame events + external YouTube mode/settings; both update My Tube history; honest semantics).
+### Phase 3 — Playback integration (PARTIAL, MVP implemented)
+**Verified (backend):** preferences API test added; backend suite **30 passed** (`cd backend && python3 -m pytest tests/ -v`).
+
+**Implemented:**
+- [x] Backend playback preference: `GET/PUT /api/v1/user/preferences` (`playback_mode`: `embedded` | `external_youtube`, stored via `UserPreference`).
+- [x] Frontend watch view (`site/index.html`, surgical patch; standalone fallback preserved): playback mode selector (embedded / open-on-YouTube), truthful notices for both modes.
+- [x] **Embedded mode:** uses YouTube IFrame Player API (existing) + best-effort My Tube history integration via Phase 2 APIs (`/history/start`, periodic `/history/progress`, completion/progress on cleanup/end). Local `localStorage` history/engagement behavior preserved.
+- [x] **External mode:** “Open on YouTube” opens `https://www.youtube.com/watch?v=VIDEO_ID` in a new tab (user’s browser profile). Records **My Tube initiation only** via `playback_source=external_youtube`; UI/toast states it **cannot confirm/sync YouTube account watch history**. No false completion/confirmed sync.
+- [x] Both modes update My Tube-side tracking (local always; backend best-effort when `/api/v1` reachable).
+
+**Not fully verified / still open:**
+- [ ] Manual browser E2E with backend running (iframe events, network calls, autoplay/cleanup across navigation) — not executed in this environment.
+- [ ] Resume-from-position UI, richer player controls, robust offline/retry queue for history events.
+- [ ] Full settings page integration beyond watch-view selector; import of local playback preference on first backend connect.
+
+### Phase 4–7
 - Phase 4: Recommendation integration (consume watch events; preserve algorithms/weights).
 - Phase 5: Worker/yt-dlp incremental sync.
 - Phase 6: Frontend adapter + settings + safe localStorage migration (only when backend contracts stable).
@@ -55,5 +69,6 @@
 - **Implemented and verified:** migrations/FTS/integrity, importer, search, domain weights/primitives, Phase 2 dual watch-history foundation (schema + additive migration + service + `/api/v1/history/*` APIs + truthful external-initiation semantics), **29 backend tests passing**.
 - **Implemented but not fully verified:** broader v1 contract/edge-case coverage (all resources, malformed pagination/DB-error paths, transaction-leak checks), history filtering/date-range completeness, LAN destructive-endpoint hardening under existing auth model.
 - **Partially implemented:** complete v1 API alignment, user-state apply, jobs/worker runtime + yt-dlp adapters, recommendation consumption of watch events.
-- **Not implemented (this session):** playback integration/UI settings (Phase 3), recommendation integration (Phase 4), yt-dlp E2E jobs/incremental sync (Phase 5), frontend adapter + safe localStorage migration (Phase 6), perf benchmarks/release readiness (Phase 7).
+- **Partially implemented (MVP, needs browser E2E):** Phase 3 playback integration/settings in watch view + backend preference + truthful embedded/external history hooks (`site/index.html` patched; standalone fallback preserved).
+- **Not implemented (this session):** full Phase 3 E2E/resume/offline queue, recommendation integration (Phase 4), yt-dlp E2E jobs/incremental sync (Phase 5), complete frontend adapter + safe localStorage migration (Phase 6), perf benchmarks/release readiness (Phase 7).
 - **Blocked by external platform limitations (by design):** confirmed write/sync of arbitrary views to YouTube account watch history via supported APIs is **not** assumed or claimed. External YouTube playback is recorded as My Tube-initiated only (`youtube_history_confirmed: false` always).

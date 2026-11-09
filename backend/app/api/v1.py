@@ -491,3 +491,49 @@ def history_clear(request: Request):
     result = history_svc.clear_all_history(session)
     session.commit()
     return {"cleared": True, **result}
+
+
+# ------------------------------------------------------------------ user preferences (Phase 3)
+
+@router.get("/user/preferences", tags=["user"])
+def get_preferences(request: Request):
+    from app.db.models import UserPreference
+    session = get_db(request)
+    rows = session.scalars(select(UserPreference)).all()
+    prefs = {}
+    for r in rows:
+        try:
+            prefs[r.key] = json.loads(r.value_json) if r.value_json else None
+        except Exception:
+            prefs[r.key] = r.value_json
+    # defaults
+    prefs.setdefault("playback_mode", "embedded")  # 'embedded' | 'external_youtube'
+    return {"preferences": prefs}
+
+
+@router.put("/user/preferences", tags=["user"])
+def put_preferences(request: Request, body: dict):
+    from app.db.models import UserPreference, now_ms
+    session = get_db(request)
+    prefs = body.get("preferences") if isinstance(body, dict) else None
+    if prefs is None and isinstance(body, dict):
+        prefs = body
+    if not isinstance(prefs, dict):
+        raise HTTPException(status_code=400, detail="preferences object required")
+    allowed = {"playback_mode"}
+    applied = {}
+    for k, v in prefs.items():
+        if k not in allowed:
+            continue
+        if k == "playback_mode" and v not in ("embedded", "external_youtube"):
+            raise HTTPException(status_code=400, detail="invalid playback_mode")
+        row = session.get(UserPreference, k)
+        if row is None:
+            row = UserPreference(key=k, value_json=json.dumps(v), updated_at=now_ms())
+            session.add(row)
+        else:
+            row.value_json = json.dumps(v)
+            row.updated_at = now_ms()
+        applied[k] = v
+    session.commit()
+    return {"preferences": applied}
