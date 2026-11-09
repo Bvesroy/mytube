@@ -1,0 +1,353 @@
+"""Primary API surface for the MyTube backend."""
+
+from __future__ import annotations
+
+import json
+import logging
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.api.deps import get_db, request_id
+from app.config import Settings, get_settings
+from app.db.models import BackgroundJob, Channel, Category, Video
+from app.repositories.library import (
+    list_channels,
+    list_videos,
+    stats as lib_stats,
+    channel_by_yt_id,
+    video_by_yt_id,
+)
+from app.repositories.user_state import export_state
+from app.schemas import (
+    ChannelSummary,
+    JobStatus,
+    KnobUpdate,
+    LocalStorageState,
+    RecommendationItem,
+    RecommendationOut,
+    RecommendationRequest,
+    SearchHitOut,
+    SearchResultOut,
+    StatBlock,
+    UserSettingsOut,
+    VideoFilterRequest,
+    VideoSummary,
+)
+from app.services.recommendations import recommend
+from app.services.search import search_videos
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api/v1", tags=["v1"])
+
+
+@router.get("/health", tags=["system"])
+def health() -> dict:
+    return {"status": "ok"}
+
+
+@router.get("/settings", tags=["system"], response_model=UserSettingsOut)
+def settings_view() -> UserSettingsOut:
+    s = get_settings()
+    return UserSettingsOut(
+        data_dir=s.data_dir,
+        host=s.host,
+        port=s.port,
+        requires_auth=s.requires_auth,
+    )
+
+
+@router.get("/channels", tags=["catalog"])
+def channels(
+    request: Request,
+    *,
+    limit: int = Query(50, ge=1, le=500),
+    cursor: str | None = None,
+    query: str | None = None,
+    sort: str = Query("name", pattern="^(name|recent|subscriber_count)$"),
+):
+    session = get_db(request)
+    rows, next_cursor = list_channels(
+        session,
+        library_id=1,
+        limit=limit,
+        cursor=cursor,
+        query=query,
+        sort=sort,
+    )
+    return {
+        "items": [_channel_summary(r) for r in rows],
+        "next_cursor": next_cursor,
+    }
+
+
+@router.get("/channels/{channel_id}")
+def channel_detail(
+    request: Request,
+    channel_id: str,
+):
+    session = get_db(request)
+    ch = channel_by_yt_id(session, channel_id)
+    if ch is None:
+        raise HTTPException(status_code=404, detail="channel not found")
+    videos, _cursor = list_videos(
+        session,
+        channel_id=ch.id,
+        limit=50,
+        cursor=None,
+        available_only=True,
+        sort="recent",
+    )
+    return {
+        "id": ch.yt_id,
+        "name": ch.name,
+        "handle": ch.handle,
+        "avatar_url": ch.avatar_url,
+        "description": ch.description,
+        "subscriber_count": ch.subscriber_count,
+        "video_count": int(session.scalar(select(Video.id).where(Video.channel_id == ch.id)) or 0),
+        "videos": [_video_summary(v, ch) for v, _c in videos[:200]],
+    }
+
+
+@router.get("/videos", tags=["catalog"])
+def videos(
+    request: Request,
+    *,
+    limit: int = Query(50, ge=1, le=500),
+    cursor: str | None = None,
+    channel: str | None = None,
+    duration_min_s: int | None = Query(None, ge=0),
+    duration_max_s: int | None = Query(None, ge=0),
+    sort: str = Query("recent", pattern="^(recent|oldest|views|duration)$"),
+):
+    session = get_db(request)
+    rows, next_cursor = list_videos(
+        session,
+        limit=limit,
+        cursor=cursor,
+        channel_id=_channel_id_for(session, channel),
+        min_duration=duration_min_s,
+        max_duration=duration_max_s,
+        sort=sort,
+    )
+    return {
+        "items": [_video_summary(v, c) for v, c in rows],
+        "next_cursor": next_cursor,
+    }
+
+
+@router.get("/videos/{video_id}")
+def video_detail(
+    request: Request,
+    video_id: str,
+):
+    session = get_db(request)
+    v = video_by_yt_id(session, video_id)
+    if v is None:
+        raise HTTPException(status_code=404, detail="video not found")
+    ch = channel_by_yt_id(session, v.channel_id) if v.channel_id else None
+    return _video_summary(v, ch)
+
+
+@router.get("/search", tags=["search"])
+def search(
+    request: Request,
+    *,
+    q: str = Query(..., min_length=1),
+    limit: int = Query(50, ge=1, le=200),
+    cursor: str | None = None,
+):
+    session = get_db(request)
+    hits, next_cursor, total = search_videos(session, q, limit=limit, cursor=cursor)
+    return SearchResultOut(query=q, hits=hits, next_cursor=next_cursor, count=total)
+
+
+@router.get("/stats", tags=["catalog"])
+def stats(
+    request: Request,
+):
+    session = get_db(request)
+    return StatBlock(**lib_stats(session, library_id=1))
+
+
+@router.get("/categories", tags=["catalog"])
+def categories(
+    request: Request,
+):
+    session = get_db(request)
+    rows = session.scalars(select(Category).order_by(Category.position)).all()
+    out: list[dict] = []
+    for cat in rows:
+        count = int(
+            session.scalar(
+                select(Video.id)
+                .join(Channel, Channel.id == Video.channel_id)
+                .where(Channel.category_id == cat.id, Video.is_available == 1)
+            )
+            or 0
+        )
+        out.append({"slug": cat.slug, "name": cat.name, "count": count})
+    return {"categories": out}
+
+
+@router.post("/recommends", tags=["recommendations"], response_model=RecommendationOut)
+def recommends(
+    request: Request,
+    body: RecommendationRequest,
+):
+    from app.services.recommendations import DefaultExplainer
+    session = get_db(request)
+    items = recommend(
+        session,
+        user_id=body.user_id,
+        count=body.count,
+        filters=body.filters,
+        knobs=body.knobs,
+        diversity=body.diversity,
+        channel_cap=body.channel_cap,
+    )
+    explainer = DefaultExplainer()
+    return RecommendationOut(
+        user_id=body.user_id,
+        items=[
+            RecommendationItem(
+                id=i.video_id,
+                title=i.title,
+                duration_s=i.duration_s,
+                view_count=i.view_count,
+                thumbnail_url=i.thumbnail_url,
+                channel=_channel_summary(i.channel) if i.channel else None,
+                score=round(i.score, 3),
+                reason=explainer.explain(i, i.features),
+            )
+            for i in items
+        ],
+        model="baseline",
+    )
+
+
+@router.get("/jobs/{job_id}", tags=["jobs"])
+def job_status(
+    request: Request,
+    job_id: str,
+):
+    session = get_db(request)
+    job = session.get(BackgroundJob, job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="job not found")
+    return JobStatus(
+        id=job.id,
+        type=job.job_type,
+        title=job.title,
+        status=job.status,
+        progress=job.progress,
+        stage=job.stage,
+        result=json.loads(job.result) if job.result else None,
+        error=job.error,
+        created_at=job.created_at,
+        started_at=job.started_at,
+    )
+
+
+@router.get("/jobs", tags=["jobs"])
+def job_list(
+    request: Request,
+    status: str = Query("active"),
+    limit: int = Query(50, ge=1, le=200),
+):
+    session = get_db(request)
+    if status == "active":
+        rows = session.scalars(
+            select(BackgroundJob).where(
+                BackgroundJob.status.in_(["queued", "running", "restarted"])
+            )
+        ).all()
+    else:
+        rows = session.scalars(
+            select(BackgroundJob).where(BackgroundJob.status == "success")
+        ).all()
+    return {
+        "jobs": [
+            JobStatus(
+                id=j.id,
+                type=j.job_type,
+                title=j.title,
+                status=j.status,
+                progress=j.progress,
+                stage=j.stage,
+                result=json.loads(j.result) if j.result else None,
+                error=j.error,
+                created_at=j.created_at,
+                started_at=j.started_at,
+            )
+            for j in rows[:limit]
+        ]
+    }
+
+
+@router.get("/user/state", tags=["user"])
+def user_state(
+    request: Request,
+):
+    session = get_db(request)
+    return export_state(session)
+
+
+@router.post("/user/state", tags=["user"])
+def user_state_apply(
+    request: Request,
+    body: LocalStorageState,
+):
+    session = get_db(request)
+    counts = {}
+    return {"applied": counts, "keys": list(body.model_dump(exclude_unset=True).keys())}
+
+
+def _channel_id_for(session: Session, yt_id: str | None) -> int | None:
+    if not yt_id:
+        return None
+    ch = channel_by_yt_id(session, yt_id)
+    return ch.id if ch else None
+
+
+def _channel_summary(ch: Channel) -> ChannelSummary:
+    return ChannelSummary(
+        id=ch.yt_id,
+        name=ch.name,
+        handle=ch.handle,
+        avatar_url=ch.avatar_url,
+        subscriber_count=ch.subscriber_count,
+        video_count=int(
+            ch.video_count if hasattr(ch, "video_count") and ch.video_count else 0
+        ),
+    )
+
+
+def _video_summary(v: Video, ch: Channel | None) -> VideoSummary:
+    return VideoSummary(
+        id=v.yt_id,
+        title=v.title,
+        duration_s=v.duration_s,
+        view_count=v.view_count,
+        published_at=v.published_at,
+        thumbnail_url=v.thumbnail_url,
+        channel=_channel_summary(ch) if ch else None,
+    )
+
+
+def _search_hit(hit, session: Session) -> SearchHitOut:
+    ch = session.get(Channel, hit.channel_id) if hit.channel_id else None
+    return SearchHitOut(
+        id=hit.video_id,
+        title=hit.title,
+        duration_s=hit.duration_s,
+        view_count=hit.view_count,
+        published_at=hit.published_at,
+        snippet=hit.snippet,
+        rank=round(hit.rank, 3),
+        channel=_channel_summary(ch) if ch else None,
+    )
