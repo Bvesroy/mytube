@@ -119,3 +119,37 @@ def test_sync_import_handler_incremental_idempotent(db):
         s.commit()
     with db.session() as s:
         assert s.execute(text("select count(*) from videos")).scalar() == 2
+
+def test_sync_import_from_source_path_local_file(db, tmp_path):
+    """Phase 5: incremental sync from a local JSON file (no network)."""
+    ensure_default_handlers_registered()
+    src = tmp_path / "import.json"
+    payload_data = [
+        {
+            "id": "UCpath",
+            "name": "Path Channel",
+            "handle": "@path",
+            "videos": [{"id": "pvid1", "title": "From file", "durationSeconds": 30, "viewCount": 7}],
+        }
+    ]
+    src.write_text(json.dumps(payload_data), encoding="utf-8")
+    with db.session() as s:
+        svc = JobService(s)
+        job = svc.enqueue("sync_import", {"library_name": "main", "source_path": str(src)})
+        job = svc.claim("w1"); s.commit()
+        result = run_job(s, job)
+        svc.finish(job.id, status="done", result=result); s.commit()
+        assert result["ok"] is True and result["incremental"] is True
+    from sqlalchemy import text
+    with db.session() as s:
+        assert s.execute(text("select count(*) from channels where yt_id='UCpath'")).scalar() == 1
+        assert s.execute(text("select count(*) from videos where yt_id='pvid1'")).scalar() == 1
+    # idempotent re-run from same source_path
+    with db.session() as s:
+        svc = JobService(s)
+        job = svc.enqueue("sync_import", {"library_name": "main", "source_path": str(src)})
+        job = svc.claim("w1"); s.commit()
+        assert run_job(s, job)["ok"] is True
+        s.commit()
+    with db.session() as s:
+        assert s.execute(text("select count(*) from videos where yt_id='pvid1'")).scalar() == 1

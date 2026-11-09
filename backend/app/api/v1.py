@@ -325,6 +325,15 @@ def job_retry(request: Request, job_id: str):
     return _job_out(job)
 
 
+@router.post("/jobs/recover-stale", tags=["jobs"])
+def jobs_recover_stale(request: Request, stale_ms: int = Query(300_000, ge=1_000, le=86_400_000)):
+    """Operational: requeue stale 'running' jobs (or mark failed if retries exhausted)."""
+    session = get_db(request)
+    n = JobService(session).recover_stale(stale_ms=int(stale_ms))
+    session.commit()
+    return {"recovered": int(n), "stale_ms": int(stale_ms)}
+
+
 @router.get("/jobs", tags=["jobs"])
 def job_list(request: Request, status: str = Query("active"), limit: int = Query(50, ge=1, le=200)):
     session = get_db(request)

@@ -90,8 +90,8 @@
 - [x] Local-first defaults: loopback bind in config; minimal middleware enforces `MYTUBE_API_TOKEN` for `/api/*` when configured (health exempt). Operators should set token before non-loopback/LAN exposure.
 - [ ] Full non-loopback auth/CSRF posture review, LAN smoke tests, rate/abuse controls.
 - [ ] **Performance benchmarks** (import/search/recommend at target scale) — **not measured**; no performance claims made.
-- [x] Minimal local backup script: `backend/scripts/backup_db.py` (SQLite online backup/copy; no destructive changes). 
-- [ ] Full backup/restore automation, packaging/release readiness + full quality-gate evidence (strict gate **BLOCKED** without supplied reports).
+- [x] Minimal local backup/restore scripts: `backend/scripts/backup_db.py` (online backup/copy) and `backend/scripts/restore_db.py` (**safe by default**: refuses overwrite unless `--force`; no destructive defaults). 
+- [ ] Full backup/restore automation/runbook verification, packaging/release readiness + full quality-gate evidence (strict gate **BLOCKED** without supplied reports).
 
 ### Constraints honored
 - No changes to `site/`, `build.py`, `.cache/` in this phase.
@@ -99,7 +99,7 @@
 - Changes kept focused and reversible.
 
 ### Status classification (current)
-- **Implemented and verified:** migrations/FTS/integrity, importer, search, domain weights/primitives, Phase 2 dual watch-history foundation (schema + additive migration + service + `/api/v1/history/*` APIs + truthful external-initiation semantics), Phases 4–5 MVP job/sync/recommendation integration and Phase 6 backend localStorage import path, **39 backend tests passing** (latest: `0.47s`, 1 Starlette/httpx deprecation warning).
+- **Implemented and verified:** migrations/FTS/integrity, importer, search, domain weights/primitives, Phase 2 dual watch-history foundation (schema + additive migration + service + `/api/v1/history/*` APIs + truthful external-initiation semantics), Phases 4–5 MVP job/sync/recommendation integration and Phase 6 backend localStorage import path, **40 backend tests passing** (latest: `0.50s`, 1 Starlette/httpx deprecation warning).
 - **Implemented but not fully verified:** broader v1 contract/edge-case coverage (all resources, malformed pagination/DB-error paths, transaction-leak checks), history filtering/date-range completeness, LAN destructive-endpoint hardening under existing auth model.
 - **Partially implemented:** complete v1 API alignment, user-state apply, jobs/worker runtime + yt-dlp adapters, recommendation consumption of watch events.
 - **Partially implemented (MVP, needs browser E2E):** Phase 3 playback/history hooks + Phase 6 explicit local→backend migration UX in `site/index.html` (standalone fallback preserved); not browser-E2E verified.
