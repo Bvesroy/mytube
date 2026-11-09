@@ -403,10 +403,14 @@ def import_state(session: Session, state: dict) -> dict:
         create_course(session, str(course["name"]), video_ids)
     counts["courses"] = len(state.get("courses", []) or [])
 
+    # accept both frontend key 'neg' and schema field name 'negative'
+    pref_state = dict(state)
+    if "negative" in pref_state and "neg" not in pref_state:
+        pref_state["neg"] = pref_state["negative"]
     for key in ("seen", "neg", "reco", "filters", "ranker", "bandit"):
-        if key in state and state[key] is not None:
-            set_preference(session, key, state[key])
-            counts[key] = len(state[key]) if hasattr(state[key], "__len__") else 1
+        if key in pref_state and pref_state[key] is not None:
+            set_preference(session, key, pref_state[key])
+            counts[key] = len(pref_state[key]) if hasattr(pref_state[key], "__len__") else 1
     return counts
 
 

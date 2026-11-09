@@ -2500,6 +2500,42 @@ table.metrics td.down { color: var(--brand); font-weight: 700; }
     setTimeout(() => URL.revokeObjectURL(url), 4000);
     toast("Downloaded your backup — hidden items, category moves, star ratings, courses and history.");
   }
+  async function migrateToBackend() {
+    // Phase 6: explicit, opt-in, non-destructive. Sends local My Tube state to backend;
+    // backend applies only entities it knows. Never confirms YouTube account history.
+    const s = snapshotState();
+    const strArr = v => Array.isArray(v) ? v.filter(x => typeof x === "string") : [];
+    const obj = v => (v && typeof v === "object" && !Array.isArray(v)) ? v : {};
+    const seenRaw = obj(s["seen"]);
+    const clean = {
+      "hidden-ch": strArr(s["hidden-ch"]),
+      "hidden-vid": strArr(s["hidden-vid"]),
+      "hidden-cat": strArr(s["hidden-cat"]),
+      "cat-ov": Object.fromEntries(Object.entries(obj(s["cat-ov"])).filter(([, v]) => typeof v === "string")),
+      "ratings": Object.fromEntries(Object.entries(obj(s["ratings"])).filter(([, v]) => Number.isInteger(v) && v >= 1 && v <= 5)),
+      "courses": (Array.isArray(s["courses"]) ? s["courses"] : [])
+        .filter(c => c && typeof c.name === "string" && Array.isArray(c.videos))
+        .map(c => ({ id: typeof c.id === "string" ? c.id : ("c" + Date.now().toString(36)), name: c.name, videos: c.videos.filter(x => typeof x === "string") })),
+      "history": (Array.isArray(s["history"]) ? s["history"] : [])
+        .filter(h => h && typeof h.id === "string")
+        .map(h => ({ id: h.id, ch: Number.isInteger(h.ch) ? h.ch : 0, t: typeof h.t === "number" ? h.t : 0 })),
+      "seen": { cats: strArr(seenRaw.cats), chs: strArr(seenRaw.chs) },
+      "neg": strArr(s["neg"]),
+    };
+    try {
+      const r = await Backend.api('/user/state', { method: 'POST', body: JSON.stringify(clean) });
+      if (!r) { toast("Backend unavailable — local data unchanged."); return; }
+      const a = (r && r.applied) || {};
+      const parts = [];
+      if (a.history) parts.push(`${a.history} history`);
+      if (a["hidden-ch"]) parts.push(`${a["hidden-ch"]} hidden channels`);
+      if (a.ratings) parts.push(`${a.ratings} ratings`);
+      if (a.courses) parts.push(`${a.courses} courses`);
+      toast(`Sent local data to backend (${parts.join(", ") || "done"}). Applies only items the backend library knows; local data unchanged; YouTube account history not confirmed.`);
+    } catch (e) {
+      toast("Migration failed — local data unchanged.");
+    }
+  }
   function applyState(state) {
     const prev = snapshotState();
     hiddenCh.clear(); for (const id of state["hidden-ch"]) hiddenCh.add(id);
@@ -2659,10 +2695,11 @@ python3 build.py --per-channel 0 # every upload, not just the latest 50</pre>
         <button class="pill" id="tuneReco">Tune ranking</button>
         <button class="pill" id="exportState" style="margin-left:8px">Export JSON</button>
         <button class="pill" id="importStateBtn" style="margin-left:8px">Import</button>
+        <button class="pill" id="migrateBackendBtn" style="margin-left:8px" title="Send local My Tube data to the backend (best-effort; backend applies only known library items)">Migrate to backend</button>
         <input type="file" id="importFile" accept=".json,application/json" hidden>
         <button class="pill" id="resetAll" style="margin-left:8px">Reset everything</button></p>
-      <p class="muted">Export downloads a JSON backup of your hidden items, category moves, ratings, courses,
-        watch history and watched-marks; Import replaces your current state with a backup file (an Undo toast restores the old one).</p>
+      <p class="muted">Export downloads a JSON backup. Import replaces local state from a file (Undo restores the old one).
+        <b>Migrate to backend</b> sends local My Tube data (hidden items, moves, ratings, courses, history/marks) to the backend when it’s running — best-effort, applies only items the backend library knows, leaves local data unchanged, and does <b>not</b> confirm or sync YouTube account history.</p>
       <p class="muted">Video titles, durations and view counts are a snapshot from the last build.
         View counts and the videos themselves live on YouTube.</p>
     </div>`;
@@ -2721,6 +2758,8 @@ python3 build.py --per-channel 0 # every upload, not just the latest 50</pre>
     };
     const exp = $("#exportState", main);
     if (exp) exp.onclick = exportState;
+    const mig = $("#migrateBackendBtn", main);
+    if (mig) mig.onclick = async () => { mig.disabled = true; try { await migrateToBackend(); } finally { mig.disabled = false; } };
     const imp = $("#importStateBtn", main);
     const impFile = $("#importFile", main);
     if (imp) imp.onclick = () => impFile.click();

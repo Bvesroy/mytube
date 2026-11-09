@@ -81,9 +81,9 @@
 
 ### Phase 6 — Frontend adapter + settings + safe localStorage migration (PARTIAL)
 - [x] Phase 3/5 backend bridge extended in `site/index.html` (best-effort, non-breaking): `window.MyTubeBackend` exposes history/preferences + `enqueueSync/getJob/cancelJob` adapter hooks; standalone/localStorage fallback preserved.
-- [x] **Safe localStorage migration endpoint implemented (backend):** `POST /api/v1/user/state` applies `LocalStorageState` via idempotent mapping (known entities only; **never claims YouTube history confirmed**). `export_state` fixed; verified by `tests/test_user_state_import.py`.
+- [x] **Safe localStorage migration implemented (backend + explicit frontend UX):** `POST /api/v1/user/state` applies `LocalStorageState` via idempotent mapping (known entities only; **never claims YouTube history confirmed**). `export_state` fixed. Frontend About view now has an explicit, opt-in **“Migrate to backend”** action that POSTs sanitized local My Tube state (non-destructive; truthful messages). Backend path verified by `tests/test_user_state_import.py`; **frontend migration UX not browser-E2E verified**.
 - [x] Playback/history preference and truthful external/embedded behavior remain integrated (Phase 3).
-- [ ] **Complete** frontend data-access adapter and explicit frontend-side migration UX/wiring (backend import exists; full end-to-end UI flow not implemented/verified this session).
+- [ ] **Complete** frontend data-access adapter and full localStorage↔backend migration coverage/unification.
 - [ ] Frontend/backend recommender/search unification (frontend still has separate scoring logic).
 
 ### Phase 7 — Security/perf/release readiness (PARTIAL)
@@ -99,10 +99,10 @@
 - Changes kept focused and reversible.
 
 ### Status classification (current)
-- **Implemented and verified:** migrations/FTS/integrity, importer, search, domain weights/primitives, Phase 2 dual watch-history foundation (schema + additive migration + service + `/api/v1/history/*` APIs + truthful external-initiation semantics), **29 backend tests passing**.
+- **Implemented and verified:** migrations/FTS/integrity, importer, search, domain weights/primitives, Phase 2 dual watch-history foundation (schema + additive migration + service + `/api/v1/history/*` APIs + truthful external-initiation semantics), Phases 4–5 MVP job/sync/recommendation integration and Phase 6 backend localStorage import path, **39 backend tests passing** (latest: `0.47s`, 1 Starlette/httpx deprecation warning).
 - **Implemented but not fully verified:** broader v1 contract/edge-case coverage (all resources, malformed pagination/DB-error paths, transaction-leak checks), history filtering/date-range completeness, LAN destructive-endpoint hardening under existing auth model.
 - **Partially implemented:** complete v1 API alignment, user-state apply, jobs/worker runtime + yt-dlp adapters, recommendation consumption of watch events.
-- **Partially implemented (MVP, needs browser E2E):** Phase 3 playback integration/settings in watch view + backend preference + truthful embedded/external history hooks (`site/index.html` patched; standalone fallback preserved).
+- **Partially implemented (MVP, needs browser E2E):** Phase 3 playback/history hooks + Phase 6 explicit local→backend migration UX in `site/index.html` (standalone fallback preserved); not browser-E2E verified.
 - **Implemented (MVP, verified where stated):** Phase 4 recommendation integration consumes My Tube watch events (`negative` feature) with algorithms/weights preserved; Phase 5 DB-backed jobs + local-verified incremental `sync_import` (idempotent upserts) with progress/cancel/retry/recovery semantics and truthful yt-dlp adapter hook; Phase 6 minimal backend bridge/job hooks in `site/index.html` (non-breaking fallback preserved); Phase 7 minimal token guard when configured + loopback-first defaults.
 - **Not fully implemented/verified:** real yt-dlp network sync E2E, full frontend adapter + safe complete localStorage migration, frontend/backend recommender/search unification, full Phase 3 E2E/resume/offline queue, non-loopback hardening/LAN tests, perf benchmarks at scale, backup/restore automation, release readiness, and strict quality-gate evidence.
 - **Blocked by external platform limitations (by design):** confirmed write/sync of arbitrary views to YouTube account watch history via supported APIs is **not** assumed or claimed. External YouTube playback is recorded as My Tube-initiated only (`youtube_history_confirmed: false` always).

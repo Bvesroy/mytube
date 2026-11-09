@@ -160,7 +160,7 @@ class LocalStorageState(BaseModel):
     courses: list[dict[str, Any]] = Field(default_factory=list)
     history: list[dict[str, Any]] = Field(default_factory=list)
     seen: dict[str, Any] = Field(default_factory=dict)
-    negative: list[str] = Field(default_factory=list)
+    negative: list[str] = Field(default_factory=list, alias="neg")
     reco: dict[str, Any] = Field(default_factory=dict)
     filters: dict[str, Any] = Field(default_factory=dict)
     ranker: dict[str, Any] = Field(default_factory=dict)
