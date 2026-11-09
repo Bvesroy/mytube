@@ -349,9 +349,17 @@ def user_state_apply(
     request: Request,
     body: LocalStorageState,
 ):
+    """Phase 6: safe localStorage migration/import (best-effort, idempotent mapping).
+    Imports only entities that exist in DB; never marks YouTube history as confirmed."""
     session = get_db(request)
-    counts = {}
-    return {"applied": counts, "keys": list(body.model_dump(exclude_unset=True).keys())}
+    from app.repositories.user_state import import_state
+    raw = body.model_dump(by_alias=True, exclude_unset=False)
+    counts = import_state(session, raw)
+    try:
+        session.commit()
+    except Exception:
+        session.rollback(); raise
+    return {"applied": counts, "keys": list(raw.keys())}
 
 
 def _channel_id_for(session: Session, yt_id: str | None) -> int | None:

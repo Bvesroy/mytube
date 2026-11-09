@@ -60,8 +60,36 @@ def run_sync_import(session: Session, job: BackgroundJob, payload: dict[str, Any
     sm = sessionmaker(bind=session.get_bind(), future=True)
     result = import_channels(sm, channels, library_name=library_name, source_path=str(source_path) if source_path else None)
 
+    # Phase 5: best-effort ChannelSyncState/IngestionRun tracking (incremental sync observability).
+    sync_state_touched = 0
+    try:
+        from sqlalchemy import select
+        from app.db.models import Channel, ChannelSyncState, IngestionRun, Library, now_ms
+        now = now_ms()
+        lib = session.scalar(select(Library).where(Library.name == library_name))
+        if lib:
+            run = IngestionRun(library_id=lib.id, kind="import", status="canceled" if _canceled(session, job) else "success",
+                               job_id=job.id, finished_at=now,
+                               channels_ok=getattr(result, "channels_upserted", 0),
+                               videos_seen=getattr(result, "videos_upserted", 0))
+            session.add(run)
+        for raw in channels:
+            yt = (raw or {}).get("id") or (raw or {}).get("channelId") or (raw or {}).get("channel_id")
+            if not yt: continue
+            ch = session.scalar(select(Channel).where(Channel.yt_id == str(yt)))
+            if not ch: continue
+            st = session.get(ChannelSyncState, ch.id)
+            if st is None:
+                st = ChannelSyncState(channel_id=ch.id); session.add(st)
+            st.status = "ok"; st.last_attempt_at = now; st.last_success_at = now
+            st.last_error = None; st.last_error_stage = None; st.consecutive_failures = 0
+            sync_state_touched += 1
+        session.commit()
+    except Exception:
+        session.rollback()  # tracking is best-effort; do not fail a successful import
+
     if _canceled(session, job):
-        return {"ok": False, "canceled": True, "channels_upserted": result.channels_upserted, "videos_upserted": result.videos_upserted}
+        return {"ok": False, "canceled": True, "channels_upserted": result.channels_upserted, "videos_upserted": result.videos_upserted, "sync_state_touched": sync_state_touched}
     svc.heartbeat(job.id, progress=0.95, stage="finalizing")
     session.commit()
     return {
@@ -70,6 +98,7 @@ def run_sync_import(session: Session, job: BackgroundJob, payload: dict[str, Any
         "channels_read": result.channels_read,
         "channels_upserted": result.channels_upserted,
         "videos_upserted": result.videos_upserted,
+        "sync_state_touched": sync_state_touched,
         "incremental": True,
         "note": "Idempotent upsert sync from supplied payload; no undocumented YouTube APIs used.",
     }

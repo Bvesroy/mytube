@@ -304,9 +304,7 @@ def export_state(session: Session) -> dict:
     videos_by_id = {row.id: row.yt_id for row in session.scalars(select(Video))}
     categories_by_id = {row.id: row.slug for row in session.scalars(select(Category))}
 
-    history_rows = list(
-        session.execute(select(WatchHistory).order_by(WatchHistory.watched_at))
-    )
+    history_rows = list(session.scalars(select(WatchHistory).order_by(WatchHistory.watched_at)))
     overrides = list(session.scalars(select(ChannelCategoryOverride)))
     ratings = {
         channels_by_id.get(row.channel_id, ""): row.rating
