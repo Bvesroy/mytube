@@ -88,3 +88,19 @@ def make_app(settings: Settings | None = None) -> FastAPI:
 
 
 app = make_app()
+
+
+@app.middleware("http")
+async def _api_token_guard(request: Request, call_next):
+    """Phase 7 (minimal): if MYTUBE_API_TOKEN is configured, require it for /api/*.
+    Loopback default remains usable without token. Non-loopback without token is
+    discouraged; operators should set MYTUBE_API_TOKEN before LAN exposure."""
+    s = getattr(request.app.state, "settings", None)
+    token = getattr(s, "api_token", None) if s else None
+    if token and request.url.path.startswith("/api/"):
+        auth = request.headers.get("authorization", "")
+        hdr = request.headers.get("x-api-token", "")
+        ok = (auth == f"Bearer {token}") or (auth.startswith("Bearer ") and auth.split(" ",1)[1] == token) or (hdr == token)
+        if not ok and not request.url.path.endswith("/health"):
+            raise HTTPException(status_code=401, detail="API token required")
+    return await call_next(request)

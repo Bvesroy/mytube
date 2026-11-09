@@ -532,7 +532,13 @@ table.metrics td.down { color: var(--brand); font-weight: 700; }
     // per-watch session state
     const sessions = new Map(); // videoId -> {id, source, lastPos, lastSent}
     function sid() { return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
-    return { ping, api, getPrefs, setPlaybackMode, modeSync, historyStart, historyProgress, historyComplete, sessions, sid };
+    // Phase 5/6: job+sync adapter hooks (best-effort). Safe localStorage migration remains partial.
+    async function enqueueSync(payload) { return api('/jobs/sync', { method: 'POST', body: JSON.stringify(payload || {}) }); }
+    async function getJob(id) { return api('/jobs/' + encodeURIComponent(id)); }
+    async function cancelJob(id) { return api('/jobs/' + encodeURIComponent(id) + '/cancel', { method: 'POST' }); }
+    const bridge = { ping, api, getPrefs, setPlaybackMode, modeSync, historyStart, historyProgress, historyComplete, sessions, sid, enqueueSync, getJob, cancelJob };
+    try { window.MyTubeBackend = bridge; } catch {}
+    return bridge;
   })();
 
   // Categories/channels marked entirely watched, without flooding the 800-entry history

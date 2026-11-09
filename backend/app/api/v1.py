@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 import logging
 from typing import Annotated
 
@@ -47,6 +48,8 @@ from app.services.recommendations import recommend
 from app.services.search import search_videos
 from app.services import history as history_svc
 from app.services.history import HistoryError
+from app.services.jobs_service import JobService
+from app.services.jobs import ensure_default_handlers_registered, run_job
 
 logger = logging.getLogger(__name__)
 
@@ -243,61 +246,94 @@ def recommends(
     )
 
 
+def _dt(ms):
+    return datetime.fromtimestamp(int(ms) / 1000, tz=timezone.utc) if ms else None
+
+def _job_out(job: BackgroundJob):
+    return JobStatus(
+        id=job.id,
+        type=job.type,
+        status=job.status,
+        progress=float(job.progress or 0),
+        stage=job.stage,
+        result=json.loads(job.result_json) if job.result_json else None,
+        error=job.error,
+        created_at=_dt(job.created_at),
+        started_at=_dt(job.started_at),
+    )
+
+
+@router.post("/jobs/sync", tags=["jobs"])
+def job_sync(request: Request, body: dict):
+    """Enqueue an incremental sync/import job (Phase 5, local-verified).
+
+    `sync_import`: idempotent upsert from supplied `channels`/`source_path` (no
+    network, no undocumented YouTube APIs). `sync_ytdlp`: truthful adapter hook.
+    """
+    session = get_db(request)
+    ensure_default_handlers_registered()
+    job_type = body.get("type") or "sync_import"
+    if job_type not in ("sync_import", "sync_ytdlp", "noop"):
+        raise HTTPException(status_code=400, detail=f"unsupported job type: {job_type}")
+    payload = dict(body)
+    payload.pop("type", None)
+    svc = JobService(session)
+    job = svc.enqueue(job_type, payload, priority=int(body.get("priority") or 5), max_attempts=int(body.get("max_attempts") or 3))
+    session.commit()
+    return _job_out(job)
+
+
 @router.get("/jobs/{job_id}", tags=["jobs"])
-def job_status(
-    request: Request,
-    job_id: str,
-):
+def job_status(request: Request, job_id: str):
     session = get_db(request)
     job = session.get(BackgroundJob, job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="job not found")
-    return JobStatus(
-        id=job.id,
-        type=job.type,
-        title=None,
-        status=job.status,
-        progress=job.progress,
-        stage=job.stage,
-        result=json.loads(job.result_json) if job.result_json else None,
-        error=job.error,
-        created_at=job.created_at,
-        started_at=job.started_at,
-    )
+    return _job_out(job)
+
+
+@router.post("/jobs/{job_id}/cancel", tags=["jobs"])
+def job_cancel(request: Request, job_id: str):
+    session = get_db(request)
+    svc = JobService(session)
+    job = svc.request_cancel(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="job not found")
+    session.commit()
+    return _job_out(job)
+
+
+@router.post("/jobs/{job_id}/retry", tags=["jobs"])
+def job_retry(request: Request, job_id: str):
+    session = get_db(request)
+    svc = JobService(session)
+    job = svc.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="job not found")
+    if job.status not in ("failed", "canceled", "done"):
+        raise HTTPException(status_code=400, detail=f"cannot retry job in status {job.status}")
+    job.status = "queued"
+    job.error = None
+    job.worker_id = None
+    job.started_at = None
+    job.finished_at = None
+    job.cancel_requested = 0
+    job.attempts = 0
+    job.progress = 0.0
+    job.stage = "retry_queued"
+    session.commit()
+    return _job_out(job)
 
 
 @router.get("/jobs", tags=["jobs"])
-def job_list(
-    request: Request,
-    status: str = Query("active"),
-    limit: int = Query(50, ge=1, le=200),
-):
+def job_list(request: Request, status: str = Query("active"), limit: int = Query(50, ge=1, le=200)):
     session = get_db(request)
     if status == "active":
-        rows = session.scalars(
-            select(BackgroundJob).where(
-                BackgroundJob.status.in_(["queued", "running", "restarted"])
-            )
-        ).all()
+        rows = session.scalars(select(BackgroundJob).where(BackgroundJob.status.in_(["queued", "running", "restarted"]))).all()
     else:
         rows = session.scalars(select(BackgroundJob).where(BackgroundJob.status == status)).all()
-    return {
-        "jobs": [
-            JobStatus(
-                id=j.id,
-                type=j.type,
-                title=None,
-                status=j.status,
-                progress=j.progress,
-                stage=j.stage,
-                result=json.loads(j.result_json) if j.result_json else None,
-                error=j.error,
-                created_at=j.created_at,
-                started_at=j.started_at,
-            )
-            for j in rows[:limit]
-        ]
-    }
+    rows = sorted(rows, key=lambda j: (j.priority, j.created_at), reverse=False)[:limit]
+    return {"jobs": [_job_out(j) for j in rows]}
 
 
 @router.get("/user/state", tags=["user"])

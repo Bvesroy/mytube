@@ -1,107 +1,85 @@
-"""Background worker runner.
-
-Single worker, single DB connection (WAL mode lets the API keep serving while this
-process imports). Claims jobs with `UPDATE … RETURNING` semantics, heartbeats on long
-runs, and recovers stale jobs if the worker stops unexpectedly.
-"""
+"""Simple local background worker runner (single process)."""
 
 from __future__ import annotations
 
 import logging
 import signal
 import time
-from dataclasses import dataclass
-from typing import Any
-
-from sqlalchemy.orm import Session
 
 from app.config import Settings
-from app.repositories.jobs import claim, heartbeat, finish, recover_stale
-from app.services.jobs import run_job
+from app.db.engine import Database
+from app.services.jobs_service import JobService
+from app.services.jobs import run_job, ensure_default_handlers_registered
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_POLL = 2.0
-DEFAULT_STALE_MS = 30_000
 
-
-@dataclass
 class Worker:
-    settings: Settings
-    poll_s: float = DEFAULT_POLL
-    stale_ms: int = DEFAULT_STALE_MS
-    worker_id: str
-    running: bool = True
-
-    defonce(self) -> None:
-        recover_stale(self.session_factory, worker_id=self.worker_id, stale_ms=self.stale_ms)
-
-    @property
-    def session_factory(self):
-        from app.db.engine import Database
-        return Database(self.settings.db_path).session_factory
+    def __init__(self, settings: Settings, *, worker_id: str, poll_s: float = 1.0):
+        self.settings = settings
+        self.worker_id = worker_id
+        self.poll_s = poll_s
+        self.running = True
+        self.db = Database.open(settings.db_path)
 
     def run_once(self) -> bool:
-        session = self.session_factory()
-        try:
-            job = claim(session, worker_id=self.worker_id, limit=1)
-            if job is None:
+        ensure_default_handlers_registered()
+        with self.db.session() as session:
+            svc = JobService(session)
+            svc.recover_stale()
+            job = svc.claim(self.worker_id)
+            if not job:
+                session.commit()
                 return False
-            logger.info("claimed job %s (%s)", job.id, job.type)
-            session.execute(
-                "UPDATE background_jobs SET started_at=?, heartbeat_at=?, status='running', stage='running' WHERE id=?",
-                (int(time.time() * 1000), int(time.time() * 1000), job.id),
-            )
+            job_id = job.id
             session.commit()
+        # Execute outside claim transaction scope per step for simplicity/visibility.
+        with self.db.session() as session:
+            svc = JobService(session)
+            job = svc.get(job_id)
+            if not job:
+                return True
             try:
-                payload = job.payload_json and job.payload_json or "{}"
-                result = run_job(session, job.id, payload)
-                finish(session, job.id, result_json=result)
-                logger.info("finished job %s", job.id)
-            except Exception:
-                logger.exception("job %s failed", job.id)
-                finish(
-                    session,
-                    job.id,
-                    status="failed",
-                    error=logger.exception.__self__.msg if hasattr(logger.exception.__self__, "msg") else "",
-                )
-                raise
-            finally:
-                try:
-                    session.close()
-                except Exception:
-                    pass
-            return True
-        finally:
-            try:
-                session.close()
-            except Exception:
-                pass
+                if svc.is_cancel_requested(job_id):
+                    svc.finish(job_id, status="canceled")
+                    session.commit()
+                    return True
+                result = run_job(session, job)
+                # Handler may have committed progress; reload status.
+                job = svc.get(job_id)
+                if job and svc.is_cancel_requested(job_id):
+                    svc.finish(job_id, status="canceled", result=result)
+                elif job and job.status == "running":
+                    svc.finish(job_id, status="done", result=result)
+                session.commit()
+            except Exception as exc:
+                logger.exception("job %s failed", job_id)
+                session.rollback()
+                with self.db.session() as s2:
+                    JobService(s2).fail_or_retry(job_id, error=f"{type(exc).__name__}: {exc}")
+                    s2.commit()
+        return True
 
     def loop(self) -> None:
-        self.once()
         while self.running:
-            if self.run_once():
-                continue
-            time.sleep(self.poll_s)
+            if not self.run_once():
+                time.sleep(self.poll_s)
 
     def stop(self) -> None:
         self.running = False
 
 
 def start_worker(settings: Settings, *, worker_id: str | None = None) -> Worker:
-    wid = worker_id or f"worker-{int(time.time() * 1000)}"
-    worker = Worker(settings=settings, worker_id=wid)
-    logger.info("starting worker %s", wid)
+    wid = worker_id or f"worker-{int(time.time()*1000)}"
+    worker = Worker(settings, worker_id=wid)
 
-    def _handle_shutdown(signum, frame):
-        logger.info("shutdown signal %s received", signum)
+    def _handle(_s, _f):
         worker.stop()
 
-    signal.signal(signal.SIGTERM, _handle_shutdown)
-    signal.signal(signal.SIGINT, _handle_shutdown)
-
+    try:
+        signal.signal(signal.SIGTERM, _handle)
+        signal.signal(signal.SIGINT, _handle)
+    except Exception:
+        pass
     worker.loop()
-    logger.info("worker %s stopped", wid)
     return worker

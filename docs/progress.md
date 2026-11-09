@@ -65,10 +65,31 @@
 - [ ] End-to-end `/api/v1/recommends` behavior against real library data + frontend/backend recommender UX alignment (frontend still has its own scoring in `site/index.html`).
 - [ ] Richer session/rating signals, evaluation metrics, and parity checks vs frontend scoring where intended.
 
-### Phase 5–7
-- Phase 5: Worker/yt-dlp incremental sync.
-- Phase 6: Frontend adapter + settings + safe localStorage migration (only when backend contracts stable).
-- Phase 7: Security/perf/release readiness + full quality gate evidence.
+### Phase 5 — Worker/yt-dlp incremental sync (MVP, local-verified)
+**Verified (backend):** `backend/tests/test_jobs.py` (5 tests) + full backend suite **38 passed** (`cd backend && python3 -m pytest tests/ -v`).
+
+**Implemented:**
+- [x] Coherent DB-backed job service aligned to `BackgroundJob` (`enqueue`/`claim`/`heartbeat`/`cancel`/`finish`/`fail_or_retry`/`recover_stale`/list).
+- [x] `sync_import` handler: **incremental/idempotent** sync via existing importer upserts from supplied channel payloads (no network, no undocumented YouTube APIs). Verifies DB state/idempotency in tests.
+- [x] `sync_ytdlp` adapter hook: **truthful** — reports unavailable/not-enabled rather than pretending; never collects passwords/cookies or uses undocumented APIs.
+- [x] API: `POST /jobs/sync`, `GET/POST /jobs/{id}` (+ cancel/retry), `GET /jobs`; progress/status fields exposed.
+- [x] Worker runner rewritten to use the coherent service/dispatcher.
+
+**Not fully verified / still open:**
+- [ ] Real yt-dlp network fetch execution + incremental channel discovery E2E (requires configured adapter/environment; not run here).
+- [ ] Long-running worker process hardening, concurrency controls, and production job throughput.
+
+### Phase 6 — Frontend adapter + settings + safe localStorage migration (PARTIAL)
+- [x] Phase 3/5 backend bridge extended in `site/index.html` (best-effort, non-breaking): `window.MyTubeBackend` exposes history/preferences + `enqueueSync/getJob/cancelJob` adapter hooks; standalone/localStorage fallback preserved.
+- [x] Playback/history preference and truthful external/embedded behavior remain integrated (Phase 3).
+- [ ] **Complete** frontend data-access adapter and **safe full localStorage migration** (contracts partially stable; full migration not implemented/verified this session).
+- [ ] Frontend/backend recommender/search unification (frontend still has separate scoring logic).
+
+### Phase 7 — Security/perf/release readiness (PARTIAL)
+- [x] Local-first defaults: loopback bind in config; minimal middleware enforces `MYTUBE_API_TOKEN` for `/api/*` when configured (health exempt). Operators should set token before non-loopback/LAN exposure.
+- [ ] Full non-loopback auth/CSRF posture review, LAN smoke tests, rate/abuse controls.
+- [ ] **Performance benchmarks** (import/search/recommend at target scale) — **not measured**; no performance claims made.
+- [ ] Backup/restore automation and release packaging/readiness + full quality-gate evidence (strict gate currently **BLOCKED** without supplied test/build/artifact reports).
 
 ### Constraints honored
 - No changes to `site/`, `build.py`, `.cache/` in this phase.
@@ -80,6 +101,6 @@
 - **Implemented but not fully verified:** broader v1 contract/edge-case coverage (all resources, malformed pagination/DB-error paths, transaction-leak checks), history filtering/date-range completeness, LAN destructive-endpoint hardening under existing auth model.
 - **Partially implemented:** complete v1 API alignment, user-state apply, jobs/worker runtime + yt-dlp adapters, recommendation consumption of watch events.
 - **Partially implemented (MVP, needs browser E2E):** Phase 3 playback integration/settings in watch view + backend preference + truthful embedded/external history hooks (`site/index.html` patched; standalone fallback preserved).
-- **Partially implemented (MVP):** recommendation integration consumes My Tube watch events in backend recommender (`negative` feature) with algorithms/weights preserved; needs real-data/E2E/parity verification.
-- **Not implemented (this session):** full Phase 3 E2E/resume/offline queue, richer recommendation signals/parity, yt-dlp E2E jobs/incremental sync (Phase 5), complete frontend adapter + safe localStorage migration (Phase 6), perf benchmarks/release readiness (Phase 7).
+- **Implemented (MVP, verified where stated):** Phase 4 recommendation integration consumes My Tube watch events (`negative` feature) with algorithms/weights preserved; Phase 5 DB-backed jobs + local-verified incremental `sync_import` (idempotent upserts) with progress/cancel/retry/recovery semantics and truthful yt-dlp adapter hook; Phase 6 minimal backend bridge/job hooks in `site/index.html` (non-breaking fallback preserved); Phase 7 minimal token guard when configured + loopback-first defaults.
+- **Not fully implemented/verified:** real yt-dlp network sync E2E, full frontend adapter + safe complete localStorage migration, frontend/backend recommender/search unification, full Phase 3 E2E/resume/offline queue, non-loopback hardening/LAN tests, perf benchmarks at scale, backup/restore automation, release readiness, and strict quality-gate evidence.
 - **Blocked by external platform limitations (by design):** confirmed write/sync of arbitrary views to YouTube account watch history via supported APIs is **not** assumed or claimed. External YouTube playback is recorded as My Tube-initiated only (`youtube_history_confirmed: false` always).

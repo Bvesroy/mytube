@@ -1,17 +1,13 @@
-"""Job service: enqueue, claim, heartbeat, finish, recover stale, list jobs.
+"""DB-backed background job service aligned to `BackgroundJob` model.
 
-Two different "jobs" environments are covered here: the queue-backed
-`BackgroundJob` table used by the upgrade path, and a lighter in-memory
-placeholder used only when running the test worker in isolation.
+Supports: enqueue, claim, heartbeat/progress, cancel, finish (with retryable
+failure), stale recovery, get/list. Local-first, single-process friendly.
 """
 
 from __future__ import annotations
 
-import logging
+import json
 import secrets
-import time
-from collections.abc import Sequence
-from dataclasses import dataclass
 from typing import Any
 
 from sqlalchemy import select
@@ -19,35 +15,9 @@ from sqlalchemy.orm import Session
 
 from app.db.models import BackgroundJob, now_ms
 
-logger = logging.getLogger(__name__)
 
-STATUS_CLAIMED = "claimed"
-STATUS_RUNNING = "running"
-STATUS_DONE = "done"
-STATUS_FAILED = "failed"
-
-
-@dataclass
-class Job:
-    id: str
-    type: str
-    status: str
-    priority: int
-    created_at: int
-    started_at: int | None = None
-    finished_at: int | None = None
-    progress: float = 0.0
-    stage: str | None = None
-    payload_json: str = "{}"
-    result_json: str | None = None
-    error: str | None = None
-    attempts: int = 0
-    max_attempts: int = 3
-    cancel_requested: int = 0
-    worker_id: str | None = None
-    heartbeat_at: int | None = None
-    dedupe_key: str | None = None
-    title: str | None = None
+def _new_id() -> str:
+    return secrets.token_hex(16)[:32]
 
 
 class JobService:
@@ -60,157 +30,167 @@ class JobService:
         payload: dict[str, Any],
         *,
         dedupe_key: str | None = None,
-        deduplication_window_until: int | None = None,
         priority: int = 5,
-        title: str | None = None,
-    ) -> Job:
-        id_ = f"job-{secrets.token_hex(4)}"
+        max_attempts: int = 3,
+    ) -> BackgroundJob:
         row = BackgroundJob(
-            id=id_,
+            id=_new_id(),
             type=job_type,
             status="queued",
             priority=priority,
             created_at=now_ms(),
             payload_json=json.dumps(payload, sort_keys=True),
-            title=title,
             dedupe_key=dedupe_key,
-            deduplication_window_until=deduplication_window_until,
-            max_attempts=3,
+            attempts=0,
+            max_attempts=max_attempts,
+            cancel_requested=0,
+            progress=0.0,
         )
         self.session.add(row)
         self.session.flush()
-        return Job(
-            id=row.id,
-            type=row.type,
-            status=row.status,
-            priority=row.priority,
-            created_at=row.created_at,
-            dedupe_key=row.dedupe_key,
-            title=row.title,
-            payload_json=row.payload_json,
-        )
+        return row
 
-    def claim(self, worker_id: str, *, limit: int = 1) -> Job | None:
+    def get(self, job_id: str) -> BackgroundJob | None:
+        return self.session.get(BackgroundJob, job_id)
+
+    def claim(self, worker_id: str) -> BackgroundJob | None:
+        # Claim highest-priority (lowest number) queued job not canceled.
         rows = (
             self.session.execute(
                 select(BackgroundJob)
-                .where(BackgroundJob.status == "queued")
-                .order_by(BackgroundJob.priority.desc(), BackgroundJob.created_at)
-                .limit(limit)
+                .where(BackgroundJob.status == "queued", BackgroundJob.cancel_requested == 0)
+                .order_by(BackgroundJob.priority.asc(), BackgroundJob.created_at.asc())
+                .limit(1)
             )
             .scalars()
             .all()
         )
-        for row in rows[:limit]:
-            row.status = "running"
-            row.worker_id = worker_id
-            row.started_at = now_ms()
-            row.heartbeat_at = now_ms()
-            self.session.add(row)
-            self.session.flush()
-            return Job(
-                id=row.id,
-                type=row.type,
-                status=row.status,
-                priority=row.priority,
-                created_at=row.created_at,
-                started_at=row.started_at,
-                heartbeat_at=row.heartbeat_at,
-                worker_id=row.worker_id,
-                dedupe_key=row.dedupe_key,
-                title=row.title,
-                payload_json=row.payload_json,
-            )
-        return None
+        if not rows:
+            return None
+        row = rows[0]
+        row.status = "running"
+        row.worker_id = worker_id
+        row.started_at = now_ms()
+        row.heartbeat_at = now_ms()
+        row.attempts = int(row.attempts or 0) + 1
+        row.stage = "starting"
+        row.progress = max(float(row.progress or 0), 0.01)
+        self.session.flush()
+        return row
 
-    def heartbeat(self, job_id: str) -> None:
-        self.session.execute(
-            BackgroundJob.__table__.update()
-            .where(BackgroundJob.id == job_id)
-            .where(BackgroundJob.status == "running")
-            .values(heartbeat_at=now_ms())
-        )
+    def heartbeat(self, job_id: str, *, progress: float | None = None, stage: str | None = None) -> bool:
+        row = self.get(job_id)
+        if not row or row.status != "running":
+            return False
+        row.heartbeat_at = now_ms()
+        if progress is not None:
+            row.progress = max(0.0, min(1.0, float(progress)))
+        if stage is not None:
+            row.stage = stage
+        self.session.flush()
+        return True
+
+    def is_cancel_requested(self, job_id: str) -> bool:
+        row = self.get(job_id)
+        return bool(row and int(row.cancel_requested or 0))
+
+    def request_cancel(self, job_id: str) -> BackgroundJob | None:
+        row = self.get(job_id)
+        if not row:
+            return None
+        row.cancel_requested = 1
+        if row.status == "queued":
+            row.status = "canceled"
+            row.finished_at = now_ms()
+            row.stage = "canceled"
+        # if running, handler should observe and finish as canceled
+        self.session.flush()
+        return row
 
     def finish(
         self,
         job_id: str,
         *,
         status: str = "done",
-        progress: float = 1.0,
-        result_json: dict[str, Any] | None = None,
+        progress: float | None = None,
+        result: dict[str, Any] | None = None,
         error: str | None = None,
-    ) -> None:
-        self.session.execute(
-            BackgroundJob.__table__.update()
-            .where(BackgroundJob.id == job_id)
-            .values(
-                status=status,
-                progress=progress,
-                finished_at=now_ms(),
-                result_json=json.dumps(result_json, sort_keys=True) if result_json else None,
-                error=error,
-            )
-        )
+    ) -> BackgroundJob | None:
+        row = self.get(job_id)
+        if not row:
+            return None
+        row.status = status
+        row.finished_at = now_ms()
+        row.heartbeat_at = now_ms()
+        if progress is not None:
+            row.progress = max(0.0, min(1.0, float(progress)))
+        elif status == "done":
+            row.progress = 1.0
+        row.result_json = json.dumps(result, sort_keys=True) if result is not None else row.result_json
+        row.error = error
+        if status in ("done", "failed", "canceled"):
+            row.stage = status
+        self.session.flush()
+        return row
 
-    def recover_stale(self, worker_id: str, *, stale_ms: int = 30_000) -> int:
+    def fail_or_retry(self, job_id: str, *, error: str) -> BackgroundJob | None:
+        row = self.get(job_id)
+        if not row:
+            return None
+        if int(row.attempts or 0) < int(row.max_attempts or 1) and not int(row.cancel_requested or 0):
+            row.status = "queued"
+            row.worker_id = None
+            row.started_at = None
+            row.heartbeat_at = now_ms()
+            row.error = error
+            row.stage = "retry_queued"
+            # keep progress as-is (informational)
+        else:
+            row.status = "failed"
+            row.finished_at = now_ms()
+            row.error = error
+            row.stage = "failed"
+        self.session.flush()
+        return row
+
+    def recover_stale(self, *, stale_ms: int = 60_000) -> int:
         cutoff = now_ms() - stale_ms
         rows = (
             self.session.execute(
-                select(BackgroundJob)
-                .where(BackgroundJob.status == "running")
-                .where(BackgroundJob.worker_id == worker_id)
-                .where(BackgroundJob.heartbeat_at < cutoff)
+                select(BackgroundJob).where(
+                    BackgroundJob.status == "running",
+                    (BackgroundJob.heartbeat_at.is_(None)) | (BackgroundJob.heartbeat_at < cutoff),
+                )
             )
             .scalars()
             .all()
         )
+        n = 0
         for row in rows:
-            row.status = "queued"
+            if int(row.cancel_requested or 0):
+                row.status = "canceled"
+                row.finished_at = now_ms()
+                row.stage = "canceled_stale"
+            elif int(row.attempts or 0) < int(row.max_attempts or 1):
+                row.status = "queued"
+                row.stage = "recovered_retry"
+            else:
+                row.status = "failed"
+                row.error = row.error or "stale worker recovery"
+                row.finished_at = now_ms()
+                row.stage = "recovered_failed"
             row.worker_id = None
-            row.started_at = None
-            row.heartbeat_at = None
-            self.session.add(row)
-        return len(rows)
+            row.heartbeat_at = now_ms()
+            n += 1
+        self.session.flush()
+        return n
 
-    def list_jobs(
-        self,
-        *,
-        status: str | None = None,
-        job_type: str | None = None,
-        limit: int = 100,
-        offset: int = 0,
-    ) -> list[Job]:
+    def list_jobs(self, *, status: str | None = None, limit: int = 100, offset: int = 0) -> list[BackgroundJob]:
         q = select(BackgroundJob)
         if status:
             q = q.where(BackgroundJob.status == status)
-        if job_type:
-            q = q.where(BackgroundJob.type == job_type)
-        rows = (
+        return list(
             self.session.execute(q.order_by(BackgroundJob.created_at.desc()).limit(limit).offset(offset))
             .scalars()
             .all()
         )
-        return [
-            Job(
-                id=r.id,
-                type=r.type,
-                status=r.status,
-                priority=r.priority,
-                created_at=r.created_at,
-                started_at=r.started_at,
-                finished_at=r.finished_at,
-                progress=r.progress,
-                stage=r.stage,
-                payload_json=r.payload_json,
-                result_json=r.result_json,
-                error=r.error,
-                attempts=r.attempts,
-                max_attempts=r.max_attempts,
-                cancel_requested=r.cancel_requested,
-                worker_id=r.worker_id,
-                heartbeat_at=r.heartbeat_at,
-                dedupe_key=r.dedupe_key,
-                title=r.title,
-            )
-            for r in rows
-        ]
