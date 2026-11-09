@@ -43,3 +43,4 @@ def run_job(session: Session, job: BackgroundJob) -> dict[str, Any]:
 def ensure_default_handlers_registered() -> None:
     # Import registers handlers (idempotent enough for our simple registry).
     from app.services import sync  # noqa: F401
+    from app.services import intelligence_jobs  # noqa: F401

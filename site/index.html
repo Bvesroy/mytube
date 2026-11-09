@@ -381,6 +381,69 @@ table.metrics th:first-child, table.metrics td:first-child { text-align: left; }
 table.metrics thead th { color: var(--fg2); font-weight: 600; }
 table.metrics td.up { color: #3fb950; font-weight: 700; }
 table.metrics td.down { color: var(--brand); font-weight: 700; }
+
+/* ---------- Intelligence workspace (My Tube 3.0) ---------- */
+.intel { max-width: 1180px; padding: 22px 0 40px; }
+.intelhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; flex-wrap: wrap; margin-bottom: 18px; }
+.intelhead h1 { margin: 0; font-size: 25px; letter-spacing: -0.5px; }
+.intelhead p { margin: 6px 0 0; color: var(--fg2); max-width: 760px; font-size: 13.5px; line-height: 1.55; }
+.intelactions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.intelcard { background: var(--bg1); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; }
+.intelcard h2, .intelcard h3 { margin: 0 0 10px; font-size: 16px; }
+.intelcard h3 { font-size: 14px; }
+.intelgrid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.intelrow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.intelrow > input[type=text], .intelrow > input[type=search], .intelrow > input[type=number], .intelrow > select, .intelrow > textarea {
+  min-height: 36px; padding: 7px 11px; border: 1px solid var(--bg3); border-radius: 9px;
+  background: var(--bg); color: var(--fg); outline: none;
+}
+.intelrow > textarea { width: 100%; min-height: 74px; resize: vertical; }
+.intelrow > input:focus, .intelrow > select:focus, .intelrow > textarea:focus { border-color: var(--fg2); }
+.intelrow .grow { flex: 1; min-width: 180px; }
+.intelmuted { color: var(--fg2); font-size: 12.5px; line-height: 1.55; }
+.intelpane { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.intellist { display: flex; flex-direction: column; gap: 8px; }
+.intelitem { border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; background: var(--bg); }
+.intelitem .meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; color: var(--fg2); font-size: 11.5px; margin-top: 6px; }
+.intelitem .meta a { color: #7cc4ff; text-decoration: underline; }
+.intelbadge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 999px; background: var(--bg2); color: var(--fg2); font-size: 11px; white-space: nowrap; }
+.intelbadge.ok { color: #3fb950; }
+.intelbadge.warn { color: #f6c945; }
+.intelbadge.bad { color: var(--brand); }
+.intelcite { border-left: 3px solid var(--brand); padding: 8px 10px; background: var(--bg1); border-radius: 0 8px 8px 0; margin: 8px 0; }
+.intelcite q { display: block; margin-top: 5px; color: var(--fg2); font-size: 12.5px; }
+.intelanswer { white-space: pre-wrap; line-height: 1.65; font-size: 14px; }
+.kgwrap { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; }
+.kgcanvas { width: 100%; height: 520px; background: var(--bg1); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.kgcanvas svg { width: 100%; height: 100%; display: block; }
+.kgnode { cursor: pointer; }
+.kgnode text { font-size: 9px; fill: var(--fg); pointer-events: none; }
+.kglegend { display: flex; gap: 10px; flex-wrap: wrap; color: var(--fg2); font-size: 11.5px; padding-top: 8px; }
+.kglegend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; }
+.bars { display: flex; align-items: flex-end; gap: 6px; height: 150px; padding-top: 10px; }
+.barcol { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; min-width: 18px; height: 100%; }
+.bar { width: 100%; max-width: 34px; min-height: 2px; background: var(--brand); border-radius: 4px 4px 0 0; opacity: 0.9; }
+.barcol span { color: var(--fg2); font-size: 9.5px; writing-mode: vertical-rl; transform: rotate(180deg); max-height: 44px; }
+.tlrow { display: grid; grid-template-columns: 74px 1fr 100px; gap: 10px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+.tlrow:last-child { border-bottom: 0; }
+.tlbar { height: 9px; border-radius: 5px; background: var(--brand); opacity: 0.7; }
+.fcface { min-height: 130px; display: grid; place-items: center; text-align: center; font-size: 19px; line-height: 1.5; padding: 20px; border: 1px dashed var(--bg3); border-radius: 10px; }
+.fcback { color: var(--fg2); font-size: 14px; margin-top: 12px; }
+.fcrate { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+.pathstage { border-left: 2px solid var(--bg3); padding: 2px 0 14px 14px; margin-left: 4px; }
+.pathstage h3 { margin: 0 0 8px; }
+.pathitem { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.pathitem:last-child { border-bottom: 0; }
+.pathitem .grow { flex: 1; min-width: 0; }
+.radarkind { text-transform: capitalize; }
+.inteloffline { max-width: 720px; margin: 50px auto; text-align: center; }
+.inteloffline h1 { font-size: 25px; }
+.inteloffline code { background: var(--bg1); padding: 2px 6px; border-radius: 5px; }
+.intelsplit { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 14px; }
+@media (max-width: 900px) {
+  .kgwrap, .intelsplit { grid-template-columns: minmax(0, 1fr); }
+  .kgcanvas { height: 380px; }
+}
 </style>
 </head>
 <body>
@@ -2076,6 +2139,16 @@ table.metrics td.down { color: var(--brand); font-weight: 700; }
     $("#side").innerHTML = `<a class="item" href="#/" data-route="home">
       <svg class="nav" viewBox="0 0 24 24"><path d="M4 21V10.08l8-6.96 8 6.96V21h-6v-6h-4v6H4z"/></svg>
       All videos<span class="cnt">${fmtNum(V.length)}</span></a>
+      <hr><h4>Intelligence</h4>
+      <a class="item${location.hash === "#/ask" ? " active" : ""}" href="#/ask" data-route="ask"><svg class="nav" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-2h2v2zm1.7-6.1-.9.9c-.7.7-1.1 1.2-1.1 2.2h-2c0-1.4.5-2.1 1.4-3l1.2-1.2c.3-.3.4-.7.4-1.2a2 2 0 0 0-4 0H5a4 4 0 0 1 8 0c0 .9-.4 1.7-1.3 2.3z"/></svg>Ask My Tube</a>
+      <a class="item" href="#/graph" data-route="graph"><svg class="nav" viewBox="0 0 24 24"><path d="M7 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm10 0a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM7 13a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm10 0a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg>Knowledge Graph</a>
+      <a class="item" href="#/vault" data-route="vault"><svg class="nav" viewBox="0 0 24 24"><path d="M4 3h16v18H4V3zm3 3v3h10V6H7zm0 6v2h10v-2H7zm0 5v2h6v-2H7z"/></svg>Knowledge Vault</a>
+      <a class="item" href="#/paths" data-route="paths"><svg class="nav" viewBox="0 0 24 24"><path d="M6 3h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm2 4v2h8V7H8zm0 4v2h8v-2H8zm0 4v2h5v-2H8z"/></svg>Learning Paths</a>
+      <a class="item" href="#/flashcards" data-route="flashcards"><svg class="nav" viewBox="0 0 24 24"><path d="M4 5h16v12H4V5zm2 2v8h12V7H6zm-2 12h16v2H4v-2z"/></svg>Flashcards</a>
+      <a class="item" href="#/research" data-route="research"><svg class="nav" viewBox="0 0 24 24"><path d="M9 3h6v4h4v14H5V7h4V3zm2 2v4h2V5h-2zM7 9v10h10V9H7zm2 2h6v2H9v-2zm0 4h6v2H9v-2z"/></svg>Research Lab</a>
+      <a class="item" href="#/radar" data-route="radar"><svg class="nav" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10h-2a8 8 0 1 1-8-8V2zm0 4a6 6 0 1 0 6 6h-2a4 4 0 1 1-4-4V6zm0 4a2 2 0 1 0 2 2h-2v-2z"/></svg>Discovery Radar</a>
+      <a class="item" href="#/analytics" data-route="analytics"><svg class="nav" viewBox="0 0 24 24"><path d="M4 20V4h2v14h14v2H4zm4-4V9h3v7H8zm5 0V6h3v10h-3zm5 0v-4h3v4h-3z"/></svg>Learning Analytics</a>
+      <a class="item" href="#/intel-settings" data-route="intel-settings"><svg class="nav" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm9 4-2.1-.6a7 7 0 0 0-.7-1.7l1.1-1.9-1.4-1.4-1.9 1.1a7 7 0 0 0-1.7-.7L13.7 3h-2l-.6 2.1a7 7 0 0 0-1.7.7L7.5 4.7 6.1 6.1l1.1 1.9a7 7 0 0 0-.7 1.7L4.4 10v2l2.1.6c.2.6.4 1.2.7 1.7l-1.1 1.9 1.4 1.4 1.9-1.1c.5.3 1.1.5 1.7.7l.6 2.1h2l.6-2.1c.6-.2 1.2-.4 1.7-.7l1.9 1.1 1.4-1.4-1.1-1.9c.3-.5.5-1.1.7-1.7l2.1-.6v-2z"/></svg>Intelligence Settings</a>
       <hr><h4>Courses <button class="addbtn" id="newCourse" title="New course" aria-label="New course">+</button></h4>
       <div id="courseList"></div>
       <hr><h4>Subscribed channels</h4>
@@ -3033,6 +3106,585 @@ python3 build.py --per-channel 0 # every upload, not just the latest 50</pre>
     cleanup = () => grid && grid.stop();
   }
 
+  /* ---------- intelligence workspace (My Tube 3.0) ---------- */
+  const intelBase = "/api/v1";
+  const intelFmtTime = s => {
+    if (s == null) return "";
+    const t = Math.max(0, Math.round(Number(s)));
+    const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sec = t % 60;
+    return h ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}` : `${m}:${String(sec).padStart(2, "0")}`;
+  };
+  const intelVideo = (id, title) => {
+    const label = esc(title || id || "video");
+    return /^[\w-]{11}$/.test(id || "") ? `<a href="#/watch/${esc(id)}" title="Play in My Tube">${label}</a>` : label;
+  };
+  async function intelFetch(path, opts) {
+    if (!(await Backend.ping())) return { error: "offline" };
+    try {
+      const r = await fetch(intelBase + path, Object.assign({ cache: "no-store", headers: { "Content-Type": "application/json" } }, opts || {}));
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) return { error: (data && data.detail) || `HTTP ${r.status}` };
+      return data;
+    } catch (err) { return { error: String(err && err.message || err) }; }
+  }
+  function intelOffline(what) {
+    return `<div class="intel"><div class="inteloffline intelcard"><h1>${esc(what)} needs the local backend</h1>
+      <p class="intelmuted">The standalone library still works. Start the backend to unlock local knowledge, search and AI features. Nothing is uploaded.</p>
+      <p class="intelmuted"><code>cd backend && python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8010</code></p>
+      <p class="intelmuted">Then open this site from the same machine, or point the frontend at the loopback API. AI, embeddings and transcription remain optional.</p></div></div>`;
+  }
+  function intelShell(title, subtitle, body, actions) {
+    return `<div class="intel"><div class="intelhead"><div><h1>${esc(title)}</h1><p>${subtitle || ""}</p></div>${actions ? `<div class="intelactions">${actions}</div>` : ""}</div>${body}</div>`;
+  }
+  function intelError(result) {
+    return `<div class="intelcard"><span class="intelbadge bad">Error</span> <span class="intelmuted">${esc(result && result.error || "request failed")}</span></div>`;
+  }
+  function intelEmpty(title, body) {
+    return `<div class="intelcard"><h2>${esc(title)}</h2><p class="intelmuted">${body || ""}</p></div>`;
+  }
+
+  function viewAsk() {
+    main.innerHTML = intelShell(
+      "Ask My Tube",
+      "Answers are built only from stored transcripts, extracted knowledge and video metadata in your subscription library. Every claim is cited. Without a local model you get extractive evidence, not invented prose.",
+      `<div class="intelcard">
+        <form id="askForm" class="intelrow">
+          <input id="askQ" class="grow" type="text" placeholder="e.g. How do different creators explain convolution?" autocomplete="off" required>
+          <button class="pill primary" id="askGo" type="submit">Ask</button>
+          <label class="intelmuted"><input id="askLlm" type="checkbox"> use local LLM</label>
+        </form>
+        <p class="intelmuted" style="margin:8px 0 0">AI is optional. The answer mode is shown so you always know whether a local model or deterministic extraction produced it.</p>
+      </div>
+      <div id="askOut"></div>`
+    );
+    const form = $("#askForm"), out = $("#askOut");
+    form.onsubmit = async e => {
+      e.preventDefault();
+      const question = $("#askQ").value.trim();
+      if (!question) return;
+      $("#askGo").disabled = true; out.innerHTML = `<div class="intelcard intelmuted">Retrieving local evidence…</div>`;
+      const res = await intelFetch("/ask", { method: "POST", body: JSON.stringify({ question, use_llm: $("#askLlm").checked, limit: 8 }) });
+      $("#askGo").disabled = false;
+      if (res.error) { out.innerHTML = intelError(res); return; }
+      const cites = (res.citations || []).map(c => `<div class="intelcite">
+        <b>[${c.index}]</b> ${intelVideo(c.video_id, c.title)} <span class="intelmuted">— ${esc(c.channel)}
+        ${c.timestamp_s != null ? ` · ${intelFmtTime(c.timestamp_s)}` : ""} · relevance ${esc(c.relevance_label || "")}</span>
+        <q>${esc(c.excerpt)}</q>
+        <div class="meta intelmuted">source: ${esc(c.source_kind)} · retrieval: ${esc((c.methods || []).join(", "))}</div>
+      </div>`).join("");
+      const notes = (res.notes || []).map(n => `<li>${esc(n)}</li>`).join("");
+      out.innerHTML = `<div class="intelcard">
+        <div class="intelrow" style="justify-content:space-between"><h2 style="margin:0">Answer</h2><span class="intelbadge ${res.mode === "llm" ? "ok" : ""}">${esc(res.mode)}</span></div>
+        <div class="intelanswer">${esc(res.answer)}</div>
+        ${notes ? `<ul class="intelmuted">${notes}</ul>` : ""}
+        <div class="intelrow" style="margin-top:10px"><button class="pill" id="saveAnswer">Save as research note</button></div>
+      </div>
+      <div class="intelcard"><h2>Evidence <span class="intelmuted">(${(res.citations || []).length} sources)</span></h2>${cites || `<p class="intelmuted">The library does not contain enough evidence. Nothing was invented.</p>`}</div>`;
+      const save = $("#saveAnswer");
+      if (save) save.onclick = async () => {
+        save.disabled = true;
+        const r = await intelFetch("/research/ask/save", { method: "POST", body: JSON.stringify({ question, answer: res.answer, citations: res.citations || [] }) });
+        save.disabled = false;
+        if (r.error) toast("Could not save: " + r.error);
+        else toast("Saved to Research Lab.");
+      };
+    };
+  }
+
+  function viewGraph() {
+    main.innerHTML = intelShell(
+      "Knowledge Graph",
+      "Concepts, videos and channels come from stored extraction. Edge provenance and confidence are kept; nothing is inferred without evidence. Click any node to see why it is connected.",
+      `<div class="intelcard">
+        <div class="intelrow">
+          <input id="kgSearch" class="grow" type="search" placeholder="Search nodes (concept, video, channel)…" autocomplete="off">
+          <label class="intelmuted"><input id="kgVideos" type="checkbox" checked> include videos</label>
+          <label class="intelmuted"><input id="kgCollections" type="checkbox"> collections</label>
+          <select id="kgWatched"><option value="">watched + unwatched</option><option value="true">watched only</option><option value="false">unwatched only</option></select>
+          <button class="pill" id="kgReload">Refresh</button>
+        </div>
+        <div class="kgwrap" style="margin-top:12px">
+          <div><div class="kgcanvas" id="kgCanvas"><div class="empty">Loading graph…</div></div>
+            <div class="kglegend"><span><i style="background:#ff6b6b"></i>concept</span><span><i style="background:#7cc4ff"></i>video</span><span><i style="background:#3fb950"></i>channel</span><span><i style="background:#f6c945"></i>collection</span><span>line opacity = confidence · labels truncate at small sizes</span></div>
+          </div>
+          <div class="intelpane" id="kgDetail"><h3>Node details</h3><p class="intelmuted">Pick a concept to see its videos and relationships.</p></div>
+        </div>
+      </div>`
+    );
+    const canvas = $("#kgCanvas"), detail = $("#kgDetail");
+    let graph = null;
+    const load = async () => {
+      canvas.innerHTML = `<div class="empty">Loading graph…</div>`;
+      const q = ["limit=220"];
+      if (!$("#kgVideos").checked) q.push("include_videos=false");
+      if ($("#kgCollections").checked) q.push("include_collections=true");
+      if ($("#kgWatched").value) q.push("watched=" + $("#kgWatched").value);
+      const res = await intelFetch("/graph?" + q.join("&"));
+      if (res.error === "offline") { main.innerHTML = intelOffline("Knowledge Graph"); return; }
+      if (res.error) { canvas.innerHTML = intelError(res); return; }
+      graph = res;
+      render();
+    };
+    const render = () => {
+      if (!graph) return;
+      const nodes = graph.nodes || [], edges = graph.edges || [];
+      if (!nodes.length) { canvas.innerHTML = `<div class="empty">No graph yet. Ingest a transcript and extract knowledge for at least one video.</div>`; return; }
+      const W = 1000, H = 620, cx = W / 2, cy = H / 2;
+      const groups = { concept: [], video: [], channel: [], collection: [] };
+      nodes.forEach(n => (groups[n.type] || groups.video).push(n));
+      const pos = {};
+      const ring = (arr, radius) => arr.forEach((n, i) => {
+        const a = (i / Math.max(1, arr.length)) * Math.PI * 2 - Math.PI / 2;
+        pos[n.id] = [cx + Math.cos(a) * radius * 0.62, cy + Math.sin(a) * radius];
+      });
+      ring(groups.concept, 250);
+      ring(groups.video, 330);
+      ring(groups.channel, 360);
+      ring(groups.collection, 390);
+      const colors = { concept: "#ff6b6b", video: "#7cc4ff", channel: "#3fb950", collection: "#f6c945" };
+      const degree = {};
+      edges.forEach(e => { degree[e.source] = (degree[e.source] || 0) + 1; degree[e.target] = (degree[e.target] || 0) + 1; });
+      const s = [];
+      s.push(`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Knowledge graph">`);
+      edges.forEach(e => {
+        const a = pos[e.source], b = pos[e.target];
+        if (!a || !b) return;
+        const op = Math.max(0.08, Math.min(0.55, Number(e.confidence || 0.2) * 0.6));
+        s.push(`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="#808080" stroke-width="1" opacity="${op}"><title>${esc(e.relation)} — ${esc(e.explanation || "")} (${Math.round(Number(e.confidence || 0) * 100)}%)</title></line>`);
+      });
+      nodes.forEach(n => {
+        const p = pos[n.id]; if (!p) return;
+        const r = Math.min(16, 5 + Math.sqrt(degree[n.id] || 1) * 1.8);
+        const label = String(n.label || "").slice(0, 26);
+        s.push(`<g class="kgnode" data-node="${esc(n.id)}" tabindex="0" role="button" aria-label="${esc(n.label || n.id)}"><circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${r}" fill="${colors[n.type] || "#aaa"}" opacity="0.92"></circle><text x="${(p[0] + r + 3).toFixed(1)}" y="${(p[1] + 3).toFixed(1)}">${esc(label)}</text></g>`);
+      });
+      s.push("</svg>");
+      canvas.innerHTML = s.join("");
+      const open = async id => {
+        const res = await intelFetch(`/graph/node?node_id=${encodeURIComponent(id)}&limit=40`);
+        if (res.error) { detail.innerHTML = intelError(res); return; }
+        const n = res.node || {};
+        const neighbors = (res.neighbors || []).map(x => `<div class="intelitem"><b>${esc(x.label || x.id)}</b><div class="meta"><span class="intelbadge">${esc(x.type || "")}</span><span>${esc(x.relation || "")}</span><span>${x.confidence != null ? Math.round(x.confidence * 100) + "% confidence" : ""}</span></div><div class="intelmuted" style="margin-top:4px">${esc(x.explanation || "")}</div></div>`).join("");
+        detail.innerHTML = `<h3>${esc(n.label || id)}</h3><div class="meta intelmuted"><span class="intelbadge">${esc(n.type || "")}</span>${n.video_count != null ? `<span>${n.video_count} videos</span>` : ""}${n.channel_count != null ? `<span>${n.channel_count} channels</span>` : ""}</div><p class="intelmuted">${esc(n.description || "")}</p><h3 style="margin-top:14px">Connections</h3><div class="intellist">${neighbors || `<span class="intelmuted">No stored relationships.</span>`}</div>`;
+      };
+      canvas.onclick = e => { const g = e.target.closest("[data-node]"); if (g) open(g.dataset.node); };
+      canvas.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { const g = e.target.closest("[data-node]"); if (g) { e.preventDefault(); open(g.dataset.node); } } };
+      $("#kgSearch").oninput = e => {
+        const term = e.target.value.trim().toLowerCase();
+        canvas.querySelectorAll("[data-node]").forEach(g => {
+          const hit = !term || g.getAttribute("aria-label").toLowerCase().includes(term);
+          g.style.opacity = hit ? "1" : "0.15";
+        });
+      };
+    };
+    $("#kgReload").onclick = load;
+    $("#kgVideos").onchange = load;
+    $("#kgCollections").onchange = load;
+    $("#kgWatched").onchange = load;
+    load();
+  }
+
+  function viewVault() {
+    main.innerHTML = intelShell(
+      "Knowledge Vault",
+      "Structured knowledge extracted from your videos. Edit or reject items without losing the source; regeneration never overwrites manual edits.",
+      `<div class="intelcard">
+        <div class="intelrow">
+          <input id="kvSearch" class="grow" type="search" placeholder="Search extracted knowledge…" autocomplete="off">
+          <button class="pill" id="kvGo">Search</button>
+          <input id="kvVid" type="text" placeholder="video id" style="width:140px">
+          <button class="pill" id="kvLoad">Load video</button>
+        </div>
+        <p class="intelmuted" style="margin:8px 0 0">Search hits cover stored extracts only. A video with no transcript has no invented knowledge.</p>
+      </div>
+      <div id="kvHits"></div><div id="kvOut"></div>`
+    );
+    const hits = $("#kvHits"), out = $("#kvOut");
+    const loadVideo = async videoId => {
+      out.innerHTML = `<div class="intelcard intelmuted">Loading knowledge…</div>`;
+      const data = await intelFetch(`/knowledge/videos/${encodeURIComponent(videoId)}`);
+      if (data.error) { out.innerHTML = intelError(data); return; }
+      const counts = {}; (data.extracts || []).forEach(x => counts[x.kind] = (counts[x.kind] || 0) + 1);
+      const rows = (data.extracts || []).map(x => `<div class="intelitem" data-extract="${x.id}">
+        <div class="intelrow" style="justify-content:space-between"><b>${esc(x.kind.replace(/_/g, " "))}</b><span class="meta"><span class="intelbadge ${x.edited ? "warn" : ""}">${x.edited ? "edited" : esc(x.source)}</span>${x.start_s != null ? `<span>${intelFmtTime(x.start_s)}</span>` : ""}${x.rejected ? `<span class="intelbadge bad">rejected</span>` : ""}</span></div>
+        <div class="kv-content" style="margin-top:5px">${esc(x.content)}</div>
+        ${x.detail ? `<div class="intelmuted" style="margin-top:3px">${esc(x.detail)}</div>` : ""}
+        <div class="intelrow" style="margin-top:7px"><button class="pill" data-act="edit">Edit</button><button class="pill" data-act="regen">Regenerate</button><button class="pill" data-act="reject">${x.rejected ? "Unreject" : "Reject"}</button></div>
+      </div>`).join("");
+      out.innerHTML = `<div class="intelcard">
+        <div class="intelrow" style="justify-content:space-between"><div><h2 style="margin:0">${intelVideo(data.video_id, data.title)}</h2><p class="intelmuted">${esc(data.channel || "")} · ${esc(data.source_kind || "")} · timing ${data.timing_available ? "available" : "unavailable"}</p></div><button class="pill" id="kvExport">Export JSON</button></div>
+        <div class="intelrow" style="margin:10px 0">${Object.entries(counts).map(([k, v]) => `<span class="intelbadge">${esc(k.replace(/_/g, " "))}: ${v}</span>`).join("")}</div>
+        <div class="intellist">${rows || `<p class="intelmuted">No extracts yet. Ingest a transcript, then extract knowledge.</p>`}</div>
+      </div>`;
+      const exportBtn = $("#kvExport");
+      if (exportBtn) exportBtn.onclick = async () => {
+        const full = await intelFetch(`/knowledge/videos/${encodeURIComponent(videoId)}/export`);
+        if (full.error) { toast(full.error); return; }
+        const blob = new Blob([JSON.stringify(full, null, 2)], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob); a.download = `mytube-knowledge-${videoId}.json`; a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      };
+      out.querySelectorAll("[data-extract]").forEach(item => {
+        const id = item.dataset.extract;
+        item.querySelectorAll("[data-act]").forEach(btn => btn.onclick = async () => {
+          const act = btn.dataset.act;
+          if (act === "edit") {
+            const body = item.querySelector(".kv-content");
+            const old = body.textContent;
+            body.innerHTML = `<textarea class="intelrow" style="width:100%;min-height:64px">${esc(old)}</textarea><div class="intelrow" style="margin-top:6px"><button class="pill primary" data-save="1">Save</button><button class="pill" data-cancel="1">Cancel</button></div>`;
+            item.querySelector("[data-cancel]").onclick = () => { body.textContent = old; };
+            item.querySelector("[data-save]").onclick = async () => {
+              const content = body.querySelector("textarea").value.trim();
+              const r = await intelFetch(`/knowledge/extracts/${id}`, { method: "PATCH", body: JSON.stringify({ content }) });
+              if (r.error) toast(r.error); else loadVideo(videoId);
+            };
+          } else if (act === "regen") {
+            const r = await intelFetch(`/knowledge/extracts/${id}/regenerate`, { method: "POST" });
+            if (r.error) toast(r.error); else loadVideo(videoId);
+          } else {
+            const rejected = !item.querySelector(".intelbadge.bad");
+            const r = await intelFetch(`/knowledge/extracts/${id}`, { method: "PATCH", body: JSON.stringify({ rejected }) });
+            if (r.error) toast(r.error); else loadVideo(videoId);
+          }
+        });
+      });
+    };
+    const search = async () => {
+      const q = $("#kvSearch").value.trim(); if (!q) return;
+      hits.innerHTML = `<div class="intelcard intelmuted">Searching…</div>`;
+      const res = await intelFetch(`/knowledge/search?q=${encodeURIComponent(q)}&limit=30`);
+      if (res.error) { hits.innerHTML = intelError(res); return; }
+      const list = (res.hits || []).map(h => `<div class="intelitem" data-vid="${esc(h.video_id)}"><b>${intelVideo(h.video_id, h.title)}</b><div class="intelmuted" style="margin-top:4px">${esc(h.content)}</div><div class="meta"><span class="intelbadge">${esc(h.kind)}</span>${h.start_s != null ? `<span>${intelFmtTime(h.start_s)}</span>` : ""}<span>${esc(h.channel || "")}</span></div></div>`).join("");
+      hits.innerHTML = `<div class="intelcard"><h2>Search results <span class="intelmuted">(${(res.hits || []).length})</span></h2><div class="intellist">${list || `<p class="intelmuted">No stored extract matches that. Try a broader term or extract knowledge for the video.</p>`}</div></div>`;
+      hits.querySelectorAll("[data-vid]").forEach(el => el.onclick = () => loadVideo(el.dataset.vid));
+    };
+    $("#kvGo").onclick = search;
+    $("#kvSearch").onkeydown = e => { if (e.key === "Enter") search(); };
+    $("#kvLoad").onclick = () => { const id = $("#kvVid").value.trim(); if (id) loadVideo(id); };
+  }
+
+  function viewPaths() {
+    main.innerHTML = intelShell(
+      "Learning Paths",
+      "Paths use only concepts and videos from your imported subscriptions. Stages, prerequisites, gaps and missing library material are shown explicitly.",
+      `<div class="intelcard"><div class="intelrow">
+        <input id="pathObj" class="grow" type="text" placeholder="Learning objective, e.g. learn computer vision from beginner to advanced" required>
+        <select id="pathLevel"><option value="auto">auto level</option><option value="beginner">beginner</option><option value="intermediate">intermediate</option><option value="advanced">advanced</option><option value="research">research</option></select>
+        <button class="pill primary" id="pathGo">Generate path</button>
+        <button class="pill" id="pathList">My paths</button>
+      </div><p class="intelmuted" style="margin:8px 0 0">If the library lacks a prerequisite, the gap is reported rather than filled with invented material.</p></div>
+      <div id="pathOut"></div>`
+    );
+    const out = $("#pathOut");
+    const renderPath = p => {
+      const stages = (p.stages || []).map(st => `<div class="pathstage"><h3>${esc(st.title)} <span class="intelbadge">${esc(st.level)}</span></h3>
+        <div>${(st.items || []).map((it, idx) => `<div class="pathitem" data-item="${esc(it.id)}" data-stage="${esc(st.id)}">
+          <span class="intelbadge ${it.status === "done" ? "ok" : ""}">${esc(it.status)}</span>
+          <div class="grow"><b>${intelVideo(it.video_id, it.title)}</b><div class="intelmuted">${esc(it.channel || "")}${it.duration_s ? ` · ${intelFmtTime(it.duration_s)}` : ""}${it.watched_locally ? " · watched locally" : ""}</div><div class="intelmuted">${esc(it.reason || "")}</div></div>
+          <div class="intelrow"><button class="pill" data-status="todo">Todo</button><button class="pill" data-status="done">Done</button><button class="pill" data-status="skipped">Skip</button><button class="pill" data-move="${idx - 1}" ${idx === 0 ? "disabled" : ""}>↑</button><button class="pill" data-move="${idx + 1}" ${idx === (st.items || []).length - 1 ? "disabled" : ""}>↓</button></div>
+        </div>`).join("")}</div></div>`).join("");
+      const gaps = (p.prerequisite_gaps || []).map(g => `<li>${esc(g.concept)} — ${esc(g.reason)}</li>`).join("");
+      out.innerHTML = `<div class="intelcard">
+        <div class="intelrow" style="justify-content:space-between"><div><h2 style="margin:0">${esc(p.objective)}</h2><p class="intelmuted">${esc(p.summary || "")}</p></div><span class="intelbadge">${p.progress.percent}% · ${p.progress.done}/${p.progress.total}</span></div>
+        ${stages || `<p class="intelmuted">No stages were generated.</p>`}
+        ${gaps ? `<h3>Prerequisite gaps</h3><ul class="intelmuted">${gaps}</ul>` : ""}
+        ${p.next_item ? `<div class="intelcard" style="margin:10px 0 0"><b>Next:</b> ${intelVideo(p.next_item.video_id, p.next_item.title)}</div>` : `<p class="intelmuted">No next item.</p>`}
+        <p class="intelmuted" style="margin-top:10px">${esc(p.difficulty_note || "")} Only subscription-library videos are used.</p>
+      </div>`;
+      out.querySelectorAll("[data-item]").forEach(row => {
+        const itemId = row.dataset.item, stageId = row.dataset.stage;
+        row.querySelectorAll("[data-status]").forEach(b => b.onclick = async () => {
+          const r = await intelFetch(`/learning/paths/${p.id}/items/${itemId}/status`, { method: "POST", body: JSON.stringify({ status: b.dataset.status }) });
+          if (r.error) toast(r.error); else getPath(p.id);
+        });
+        row.querySelectorAll("[data-move]").forEach(b => b.onclick = async () => {
+          const r = await intelFetch(`/learning/paths/${p.id}/items/${itemId}/move`, { method: "POST", body: JSON.stringify({ position: Number(b.dataset.move) }) });
+          if (r.error) toast(r.error); else getPath(p.id);
+        });
+      });
+    };
+    const getPath = async id => {
+      out.innerHTML = `<div class="intelcard intelmuted">Loading path…</div>`;
+      const r = await intelFetch(`/learning/paths/${id}`);
+      if (r.error) { out.innerHTML = intelError(r); return; } renderPath(r);
+    };
+    $("#pathGo").onclick = async () => {
+      const objective = $("#pathObj").value.trim(); if (!objective) return;
+      out.innerHTML = `<div class="intelcard intelmuted">Matching concepts and prerequisite order…</div>`;
+      const r = await intelFetch("/learning/paths", { method: "POST", body: JSON.stringify({ objective, level: $("#pathLevel").value }) });
+      if (r.error) { out.innerHTML = intelError(r); return; } renderPath(r);
+    };
+    $("#pathList").onclick = async () => {
+      const r = await intelFetch("/learning/paths");
+      if (r.error) { out.innerHTML = intelError(r); return; }
+      const list = (r.paths || []).map(p => `<div class="intelitem" data-path="${esc(p.id)}"><b>${esc(p.objective)}</b><div class="meta"><span class="intelbadge">${esc(p.level)}</span><span>${esc(p.status)}</span></div></div>`).join("");
+      out.innerHTML = `<div class="intelcard"><h2>Active paths</h2><div class="intellist">${list || `<p class="intelmuted">No paths yet.</p>`}</div></div>`;
+      out.querySelectorAll("[data-path]").forEach(el => el.onclick = () => getPath(el.dataset.path));
+    };
+  }
+
+  function viewFlashcards() {
+    main.innerHTML = intelShell(
+      "Spaced Repetition",
+      "FSRS-5 scheduling over your own cards. Auto-generated cards link to the source extract; review history is stored independently of videos.",
+      `<div class="intelcard">
+        <div class="intelrow"><select id="fcDeck"></select><button class="pill" id="fcLoad">Load due cards</button><input id="fcVid" type="text" placeholder="video id to generate" style="width:160px"><button class="pill" id="fcGen">Generate</button><button class="pill" id="fcNewDeck">New deck</button><button class="pill" id="fcExport">Export deck</button></div>
+        <p class="intelmuted" style="margin:8px 0 0">Generated cards are proposals from stored definitions, concepts, formulas and code. Edit or delete anything wrong.</p>
+      </div>
+      <div class="intelgrid"><div id="fcCard"></div><div id="fcStats"></div></div>`
+    );
+    let decks = [], due = [], index = 0;
+    const deck = $("#fcDeck"), cardBox = $("#fcCard"), statsBox = $("#fcStats");
+    const loadDecks = async () => {
+      const r = await intelFetch("/flashcards/decks");
+      if (r.error) { cardBox.innerHTML = intelError(r); return; }
+      decks = r.decks || [];
+      deck.innerHTML = decks.map(d => `<option value="${esc(d.id)}">${esc(d.name)} (${d.due_now || 0} due)</option>`).join("") || `<option value="">Default deck</option>`;
+      loadDue();
+    };
+    const loadStats = async () => {
+      const r = await intelFetch("/flashcards/stats");
+      if (r.error) return;
+      statsBox.innerHTML = `<div class="intelcard"><h2>Review stats</h2>
+        <div class="stats"><div class="stat">${r.due_now} due now</div><div class="stat">${r.total_cards} active cards</div><div class="stat">${r.reviews_window} reviews / ${r.window_days}d</div><div class="stat">retention ${r.retention_estimate == null ? "—" : Math.round(r.retention_estimate * 100) + "%"}</div></div>
+        <p class="intelmuted">${esc(r.note)}</p></div>`;
+    };
+    const loadDue = async () => {
+      const id = deck.value;
+      const r = await intelFetch(`/flashcards/due?limit=40${id ? "&deck_id=" + encodeURIComponent(id) : ""}`);
+      if (r.error) { cardBox.innerHTML = intelError(r); return; }
+      due = r.cards || []; index = 0; renderCard(); loadStats();
+    };
+    const renderCard = () => {
+      if (!due.length) { cardBox.innerHTML = `<div class="intelcard"><h2>All caught up</h2><p class="intelmuted">No cards are due in this deck. Generate cards from a processed video or come back later.</p></div>`; return; }
+      const c = due[index % due.length];
+      cardBox.innerHTML = `<div class="intelcard"><div class="intelrow" style="justify-content:space-between"><span class="intelbadge">${esc(c.card_type)}</span><span class="intelmuted">${index + 1} / ${due.length} · ${esc(c.state)}</span></div>
+        <div class="fcface" id="fcFace">${esc(c.front)}</div>
+        <div id="fcBack"></div>
+        <div class="intelrow" style="margin-top:10px"><button class="pill primary" id="fcShow">Show answer</button><button class="pill" id="fcEdit">Edit</button><button class="pill" id="fcDelete">Delete</button></div></div>`;
+      $("#fcShow").onclick = () => {
+        $("#fcBack").innerHTML = `<div class="intelcard" style="margin-top:10px"><div class="intelanswer">${esc(c.back)}</div>${c.source_excerpt ? `<p class="intelmuted">Source: ${esc(c.source_excerpt)}</p>` : ""}</div><div class="fcrate">${[[1, "Again"], [2, "Hard"], [3, "Good"], [4, "Easy"]].map(([n, label]) => `<button class="pill" data-rate="${n}">${label}</button>`).join("")}</div>`;
+        $("#fcBack").querySelectorAll("[data-rate]").forEach(b => b.onclick = async () => {
+          const r = await intelFetch(`/flashcards/${c.id}/review`, { method: "POST", body: JSON.stringify({ rating: Number(b.dataset.rate) }) });
+          if (r.error) { toast(r.error); return; }
+          due = due.filter(x => x.id !== c.id); renderCard(); loadStats(); loadDecks();
+        });
+      };
+      $("#fcEdit").onclick = async () => {
+        const front = prompt("Front of the card", c.front); if (front == null) return;
+        const back = prompt("Back of the card", c.back); if (back == null) return;
+        const r = await intelFetch(`/flashcards/${c.id}`, { method: "PATCH", body: JSON.stringify({ front, back }) });
+        if (r.error) toast(r.error); else loadDue();
+      };
+      $("#fcDelete").onclick = async () => {
+        if (!confirm("Delete this card? It can be restored from the API.")) return;
+        const r = await intelFetch(`/flashcards/${c.id}`, { method: "DELETE" });
+        if (r.error) toast(r.error); else loadDue();
+      };
+    };
+    $("#fcLoad").onclick = loadDue;
+    deck.onchange = loadDue;
+    $("#fcGen").onclick = async () => {
+      const video_id = $("#fcVid").value.trim(); if (!video_id) return;
+      const r = await intelFetch("/flashcards/generate", { method: "POST", body: JSON.stringify({ video_id, deck_id: deck.value || null }) });
+      if (r.error) { toast(r.error); return; }
+      toast(`Cards: ${r.created} new, ${r.skipped} already present.`); loadDecks();
+    };
+    $("#fcNewDeck").onclick = async () => {
+      const name = prompt("Deck name"); if (!name) return;
+      const r = await intelFetch("/flashcards/decks", { method: "POST", body: JSON.stringify({ name }) });
+      if (r.error) toast(r.error); else loadDecks();
+    };
+    $("#fcExport").onclick = async () => {
+      if (!deck.value) return;
+      const r = await intelFetch(`/flashcards/export/${encodeURIComponent(deck.value)}`);
+      if (r.error) { toast(r.error); return; }
+      const blob = new Blob([JSON.stringify(r, null, 2)], { type: "application/json" });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `mytube-deck-${deck.value}.json`; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    };
+    loadDecks();
+  }
+
+  async function viewResearch() {
+    main.innerHTML = intelShell(
+      "Research Lab",
+      "Compare explanations across videos and keep the evidence. Directly stated material, deterministic inferences and optional local-model synthesis are labelled separately.",
+      `<div class="intelsplit"><div class="intelcard"><h2>Saved documents</h2><div id="rdList" class="intellist"><span class="intelmuted">Loading…</span></div></div>
+      <div><div class="intelcard"><h2>Compare videos</h2><div class="intelrow"><input id="rdIds" class="grow" type="text" placeholder="video ids, comma separated" autocomplete="off"><button class="pill primary" id="rdGo">Compare</button></div><p class="intelmuted" style="margin:8px 0 0">Select at least two videos that already have transcripts or extracted knowledge.</p><div id="rdPick" class="intelrow" style="margin-top:8px"></div></div><div id="rdOut"></div></div></div>`
+    );
+    const out = $("#rdOut");
+    const renderDoc = doc => {
+      const body = doc.body || {};
+      if (doc.kind === "answer") {
+        out.innerHTML = `<div class="intelcard"><h2>${esc(body.question || doc.title)}</h2><div class="intelanswer">${esc(body.answer || "")}</div>${(body.citations || []).map(c => `<div class="intelcite"><b>[${c.index}]</b> ${intelVideo(c.video_id, c.title)}<q>${esc(c.excerpt || "")}</q></div>`).join("")}</div>`;
+        return;
+      }
+      const section = (key, label) => {
+        const value = body[key];
+        if (!value || (Array.isArray(value) && !value.length)) return "";
+        return `<div class="intelcard"><h2>${esc(label)}</h2>${Array.isArray(value) ? value.map(v => `<div class="intelitem"><div>${esc(typeof v === "string" ? v : v.concept || v.text || v.summary || JSON.stringify(v))}</div>${v.claim_type ? `<div class="meta"><span class="intelbadge">${esc(v.claim_type)}</span>${v.rule ? `<span>${esc(v.rule)}</span>` : ""}</div>` : ""}${v.evidence ? `<div class="intelcite"><b>${intelVideo(v.evidence.video_id, v.evidence.title)}</b><q>${esc(v.evidence.excerpt || v.evidence.note || "")}</q></div>` : ""}</div>`).join("") : `<p class="intelanswer">${esc(String(value))}</p>`}</div>`;
+      };
+      out.innerHTML = `<div class="intelcard"><h2>${esc(doc.title)}</h2><p class="intelmuted">Saved comparison. Claim types: ${Object.entries(body.claim_types || {}).map(([k, v]) => `<b>${esc(k)}</b> — ${esc(v)}`).join(" · ")}</p></div>` +
+        section("common_explanations", "Common explanations") + section("agreements", "Agreements") +
+        section("possible_contradictions", "Possible contradictions (heuristic)") + section("unique_concepts", "Unique concepts") +
+        section("different_approaches", "Different technical approaches") + section("missing_explanations", "Missing explanations") +
+        section("complementary_videos", "Complementary videos");
+    };
+    const loadDocs = async () => {
+      const r = await intelFetch("/research/documents?limit=40");
+      if (r.error) { $("#rdList").innerHTML = intelError(r); return; }
+      const rows = (r.documents || []).map(d => `<div class="intelitem" data-doc="${esc(d.id)}"><b>${esc(d.title)}</b><div class="meta"><span class="intelbadge">${esc(d.kind)}</span></div></div>`).join("");
+      $("#rdList").innerHTML = rows || `<span class="intelmuted">Nothing saved yet.</span>`;
+      $("#rdList").querySelectorAll("[data-doc]").forEach(el => el.onclick = async () => {
+        const d = await intelFetch(`/research/documents/${encodeURIComponent(el.dataset.doc)}`);
+        if (d.error) toast(d.error); else renderDoc(d);
+      });
+    };
+    const pick = async () => {
+      const g = await intelFetch("/graph?limit=200");
+      if (g.error) return;
+      const vids = (g.nodes || []).filter(n => n.type === "video");
+      $("#rdPick").innerHTML = vids.slice(0, 18).map(v => `<label class="intelbadge" style="cursor:pointer"><input type="checkbox" value="${esc(v.id.replace(/^video:/, ""))}"> ${esc(String(v.label).slice(0, 34))}</label>`).join("") || `<span class="intelmuted">No processed videos yet.</span>`;
+    };
+    $("#rdGo").onclick = async () => {
+      const picked = [...$("#rdPick").querySelectorAll("input:checked")].map(x => x.value);
+      const typed = $("#rdIds").value.split(/[\s,]+/).filter(Boolean);
+      const ids = [...new Set([...picked, ...typed])];
+      if (ids.length < 2) { toast("Select or type at least two video ids."); return; }
+      out.innerHTML = `<div class="intelcard intelmuted">Comparing stored evidence…</div>`;
+      const r = await intelFetch("/research/compare", { method: "POST", body: JSON.stringify({ video_ids: ids }) });
+      if (r.error) { out.innerHTML = intelError(r); return; }
+      renderDoc({ kind: "comparison", title: r.title || "Comparison", body: r }); loadDocs();
+    };
+    loadDocs(); pick();
+  }
+
+  function viewRadar() {
+    main.innerHTML = intelShell(
+      "Discovery Radar",
+      "Proactive reports over your imported subscriptions only. New uploads, under-watched channels, new clusters, overlooked content and objective matches all carry a reason.",
+      `<div class="intelcard"><div class="intelrow"><label class="intelmuted"><input id="radEnabled" type="checkbox"> enabled</label><label class="intelmuted"><input id="radPaused" type="checkbox"> paused</label><select id="radSchedule"><option value="daily">daily</option><option value="weekly">weekly</option><option value="manual">manual</option></select><input id="radWindow" type="number" min="1" max="365" style="width:92px" title="window in days"> days<button class="pill primary" id="radSave">Save</button><button class="pill" id="radScan">Scan now</button></div>
+        <p class="intelmuted" style="margin:8px 0 0">The radar never searches outside your subscriptions and never uploads viewing data. Nothing runs continuously without permission.</p></div><div id="radOut"></div>`
+    );
+    const out = $("#radOut");
+    const renderReport = report => {
+      if (!report) { out.innerHTML = intelEmpty("No report yet", "Run a scan when you want a report. Scheduling is opt-in."); return; }
+      const events = (report.events || []).map(ev => `<div class="intelitem" data-event="${esc(ev.id)}">
+        <div class="intelrow" style="justify-content:space-between"><b class="radarkind">${esc(ev.kind.replace(/_/g, " "))}</b><span class="meta"><span class="intelbadge">score ${ev.score}</span>${ev.status !== "new" ? `<span class="intelbadge warn">${esc(ev.status)}</span>` : ""}</span></div>
+        ${ev.title ? `<div style="margin-top:5px">${intelVideo(ev.video_id, ev.title)} <span class="intelmuted">${esc(ev.channel || "")}</span></div>` : ""}
+        <div class="intelmuted" style="margin-top:4px">${esc(ev.reason)}</div>
+        <div class="intelrow" style="margin-top:6px"><button class="pill" data-ev-status="saved">Save</button><button class="pill" data-ev-status="dismissed">Dismiss</button></div></div>`).join("");
+      out.innerHTML = `<div class="intelcard"><div class="intelrow" style="justify-content:space-between"><h2 style="margin:0">${esc(report.period)} report</h2><span class="intelmuted">${new Date(report.generated_at).toLocaleString()}</span></div><p class="intelmuted">Window: ${report.window.days || ""} days · ${(report.events || []).length} events</p><div class="intellist">${events || `<p class="intelmuted">No opportunities matched the current window.</p>`}</div></div>`;
+      out.querySelectorAll("[data-event]").forEach(row => row.querySelectorAll("[data-ev-status]").forEach(b => b.onclick = async () => {
+        const r = await intelFetch(`/radar/events/${row.dataset.event}/status`, { method: "POST", body: JSON.stringify({ status: b.dataset.evStatus }) });
+        if (r.error) toast(r.error); else load();
+      }));
+    };
+    const load = async () => {
+      const cfg = await intelFetch("/radar/config");
+      if (cfg.error) { out.innerHTML = intelError(cfg); return; }
+      const c = cfg.config || {};
+      $("#radEnabled").checked = !!c.enabled; $("#radPaused").checked = !!c.paused;
+      $("#radSchedule").value = c.schedule || "daily"; $("#radWindow").value = c.window_days || 30;
+      const rep = await intelFetch("/radar/report");
+      if (rep.error) { out.innerHTML = intelError(rep); return; }
+      renderReport(rep.report);
+    };
+    $("#radSave").onclick = async () => {
+      const r = await intelFetch("/radar/config", { method: "PUT", body: JSON.stringify({ enabled: $("#radEnabled").checked, paused: $("#radPaused").checked, schedule: $("#radSchedule").value, window_days: Number($("#radWindow").value) || 30 }) });
+      if (r.error) toast(r.error); else { toast("Radar settings saved."); load(); }
+    };
+    $("#radScan").onclick = async () => {
+      out.innerHTML = `<div class="intelcard intelmuted">Scanning your subscription library…</div>`;
+      const r = await intelFetch("/radar/scan", { method: "POST", body: JSON.stringify({ period: "manual" }) });
+      if (r.error) { out.innerHTML = intelError(r); return; }
+      if (r.enabled === false || r.paused) { toast(r.reason || "Discovery is off."); load(); return; }
+      renderReport(r);
+    };
+    load();
+  }
+
+  function viewAnalytics() {
+    main.innerHTML = intelShell(
+      "Learning Analytics",
+      "Built only from stored My Tube events. Watching is exposure, not mastery; retention is a flashcard proxy. Inferred shifts show their evidence.",
+      `<div class="intelrow" style="margin-bottom:12px"><select id="tlPeriod"><option value="month">monthly</option><option value="week">weekly</option></select><select id="tlMetric"><option value="exposure">exposure (videos)</option><option value="engagement">engagement (seconds)</option><option value="revision">revision (reviews)</option></select><button class="pill" id="tlGo">Refresh</button></div><div id="tlOut"></div>`
+    );
+    const out = $("#tlOut");
+    const render = data => {
+      const metric = $("#tlMetric").value;
+      const val = b => metric === "exposure" ? b.exposure.distinct_videos : metric === "engagement" ? b.engagement_s : b.revision.reviews;
+      const max = Math.max(1, ...data.buckets.map(val));
+      const bars = data.buckets.map(b => `<div class="barcol"><div class="bar" style="height:${Math.max(2, Math.round(val(b) / max * 100))}%" title="${val(b)}"></div><span>${esc(b.bucket.slice(2))}</span></div>`).join("");
+      const s = data.summary;
+      const topics = (s.top_subjects || []).map(t => `<div class="tlrow"><span>${esc(t.topic)}</span><div class="tlbar" style="width:${Math.max(4, Math.round(t.count / Math.max(1, s.top_subjects[0].count) * 100))}%"></div><span>${t.count}</span></div>`).join("");
+      const emerging = (s.emerging_interests || []).map(x => `<li>${esc(x.topic)} <span class="intelmuted">(${x.prior} → ${x.recent})</span></li>`).join("");
+      const declining = (s.declining_interests || []).map(x => `<li>${esc(x.topic)} <span class="intelmuted">(${x.prior} → ${x.recent})</span></li>`).join("");
+      const transitions = (s.transitions || []).map(t => `<li>${esc(t.from)} → <b>${esc(t.to)}</b> <span class="intelmuted">${esc(t.from_bucket)} → ${esc(t.to_bucket)} · evidence ${t.evidence.from_count}/${t.evidence.to_count} · ${esc(t.claim_type)}</span></li>`).join("");
+      out.innerHTML = `<div class="intelcard"><div class="stats"><div class="stat">${s.learning_sessions} sessions</div><div class="stat">${s.videos_completed} completions</div><div class="stat">${s.revision.reviews} reviews</div><div class="stat">retention ${s.revision.retention_proxy == null ? "—" : Math.round(s.revision.retention_proxy * 100) + "%"}</div><div class="stat">${s.knowledge_growth.new_concepts} new concepts</div></div></div>
+        <div class="intelcard"><h2>Activity</h2><div class="bars">${bars}</div><p class="intelmuted">${esc(metric)} per ${esc(data.period)}. Empty buckets are real zeros.</p></div>
+        <div class="intelgrid"><div class="intelcard"><h2>Top subjects</h2>${topics || `<p class="intelmuted">No topic evidence yet.</p>`}</div><div class="intelcard"><h2>Interest shifts</h2><h3>Emerging</h3><ul class="intelmuted">${emerging || "<li>None</li>"}</ul><h3>Declining</h3><ul class="intelmuted">${declining || "<li>None</li>"}</ul></div></div>
+        <div class="intelcard"><h2>Topic transitions</h2><ul class="intelmuted">${transitions || "<li>No dominant-topic change in this window.</li>"}</ul><p class="intelmuted">${Object.entries(data.metric_definitions || {}).map(([k, v]) => `<b>${esc(k)}</b>: ${esc(String(v))}`).join(" · ")}</p></div>`;
+    };
+    const load = async () => {
+      out.innerHTML = `<div class="intelcard intelmuted">Loading timeline…</div>`;
+      const r = await intelFetch(`/analytics/timeline?period=${$("#tlPeriod").value}&buckets=12`);
+      if (r.error) { out.innerHTML = intelError(r); return; } render(r);
+    };
+    $("#tlGo").onclick = load; $("#tlPeriod").onchange = load; $("#tlMetric").onchange = load;
+    load();
+  }
+
+  function viewIntelSettings() {
+    main.innerHTML = intelShell(
+      "Intelligence Settings",
+      "Everything runs locally and is optional. No model is downloaded here. The backend reports what is actually reachable; unavailable features degrade to FTS, TF-IDF and deterministic extraction.",
+      `<div class="intelgrid"><div id="aiStatus"></div><div id="aiCfg"></div></div><div id="pipeCfg"></div>`
+    );
+    const status = $("#aiStatus"), cfg = $("#aiCfg"), pipe = $("#pipeCfg");
+    const load = async () => {
+      const s = await intelFetch("/ai/status");
+      if (s.error) { status.innerHTML = intelError(s); return; }
+      status.innerHTML = `<div class="intelcard"><h2>Local status</h2>
+        <div class="intelitem"><b>LLM</b><div class="intelmuted">provider: ${esc(s.llm.provider)} · model: ${esc(s.llm.model || "—")} · ${s.llm.available ? `<span class="intelbadge ok">available</span>` : `<span class="intelbadge warn">${esc(s.llm.error || "unavailable")}</span>`}</div></div>
+        <div class="intelitem" style="margin-top:8px"><b>Embeddings</b><div class="intelmuted">${esc(s.embedding.model_id)} · ${s.embedding.dim} dims · ${s.embedding.available ? `<span class="intelbadge ok">local</span>` : `<span class="intelbadge bad">unavailable</span>`}</div></div>
+        <div class="intelitem" style="margin-top:8px"><b>Transcription</b><div class="intelmuted">${s.transcription.available ? `<span class="intelbadge ok">available</span>` : `<span class="intelbadge warn">not installed</span>`} — ${esc(s.transcription.note)}</div></div>
+        <p class="intelmuted" style="margin-top:10px">local only: ${s.policy.local_only} · cloud required: ${s.policy.requires_cloud} · downloads models: ${s.policy.downloads_models} · works without AI: ${s.policy.works_without_ai}</p>
+        <button class="pill" id="aiTest">Test local model</button></div>`;
+      $("#aiTest").onclick = async () => {
+        const r = await intelFetch("/ai/test", { method: "POST" });
+        if (r.error) toast(r.error); else toast(`Model replied: ${String(r.response || "").slice(0, 80)}`);
+      };
+      const c = s.selected_config || { provider: "ollama", model: "llama3.2:3b", endpoint: "", enabled: false };
+      cfg.innerHTML = `<div class="intelcard"><h2>Model selection</h2><div class="intelrow"><label class="intelmuted"><input id="aiOn" type="checkbox" ${c.enabled ? "checked" : ""}> enable local LLM</label><select id="aiProv"><option value="ollama" ${c.provider === "ollama" ? "selected" : ""}>Ollama</option><option value="llamacpp" ${c.provider === "llamacpp" ? "selected" : ""}>llama.cpp</option><option value="none" ${c.provider === "none" ? "selected" : ""}>none</option></select></div><div class="intelrow" style="margin-top:8px"><input id="aiModel" class="grow" type="text" value="${esc(c.model || "")}" placeholder="model name"></div><div class="intelrow" style="margin-top:8px"><input id="aiEndpoint" class="grow" type="text" value="${esc(c.endpoint || "")}" placeholder="loopback endpoint (optional)"></div><div class="intelrow" style="margin-top:10px"><button class="pill primary" id="aiSave">Save selection</button></div><p class="intelmuted">Saving does not install, download or call a remote service. Non-loopback endpoints require the backend's explicit remote-AI opt-in.</p></div>`;
+      $("#aiSave").onclick = async () => {
+        const r = await intelFetch("/ai/config", { method: "PUT", body: JSON.stringify({ enabled: $("#aiOn").checked, provider: $("#aiProv").value, model: $("#aiModel").value.trim() || "none", endpoint: $("#aiEndpoint").value.trim() || null }) });
+        if (r.error) toast(r.error); else { toast("AI selection saved."); load(); }
+      };
+      const p = await intelFetch("/pipeline/config");
+      if (p.error) { pipe.innerHTML = intelError(p); return; }
+      const pc = p.config || {};
+      const step = (k, label) => `<label class="intelbadge" style="cursor:pointer"><input type="checkbox" value="${k}" ${(pc.steps || []).includes(k) ? "checked" : ""}> ${label}</label>`;
+      pipe.innerHTML = `<div class="intelcard"><h2>Processing pipeline</h2><div class="intelrow">${step("transcript", "transcript")}${step("extract", "extract")}${step("embed", "embed")}${step("chapters", "chapters")}${step("cards", "cards")}</div><div class="intelrow" style="margin-top:8px"><label class="intelmuted"><input id="pipeAuto" type="checkbox" ${pc.auto_process_new ? "checked" : ""}> auto-process new videos</label><label class="intelmuted"><input id="pipeLlm" type="checkbox" ${pc.allow_llm ? "checked" : ""}> allow local LLM</label><input id="pipeMax" type="number" min="1" max="500" value="${pc.max_videos_per_run || 50}" style="width:90px"> max/run</div><div class="intelrow" style="margin-top:10px"><button class="pill primary" id="pipeSave">Save pipeline</button></div><p class="intelmuted">Processing is incremental, cancellable and never blocks the library UI. Fetching captions or audio remains an explicit, separate action.</p><div class="intelrow" style="margin-top:10px"><input id="pipeIds" class="grow" type="text" placeholder="video ids to process now, comma separated"><button class="pill" id="pipeRun">Run now</button></div><div id="pipeOut" class="intelmuted" style="margin-top:8px"></div></div>`;
+      $("#pipeSave").onclick = async () => {
+        const steps = [...pipe.querySelectorAll("input[type=checkbox][value]")].filter(x => x.checked && ["transcript", "extract", "embed", "chapters", "cards"].includes(x.value)).map(x => x.value);
+        const r = await intelFetch("/pipeline/config", { method: "PUT", body: JSON.stringify({ steps, auto_process_new: $("#pipeAuto").checked, allow_llm: $("#pipeLlm").checked, max_videos_per_run: Number($("#pipeMax").value) || 50 }) });
+        if (r.error) toast(r.error); else toast("Pipeline settings saved.");
+      };
+      $("#pipeRun").onclick = async () => {
+        const ids = $("#pipeIds").value.split(/[\s,]+/).filter(Boolean);
+        if (!ids.length) { toast("Enter at least one video id."); return; }
+        const steps = [...pipe.querySelectorAll("input[type=checkbox][value]")].filter(x => x.checked && ["transcript", "extract", "embed", "chapters", "cards"].includes(x.value)).map(x => x.value);
+        $("#pipeOut").textContent = "Running local pipeline…";
+        const r = await intelFetch("/pipeline/run", { method: "POST", body: JSON.stringify({ video_ids: ids, steps: steps.length ? steps : ["extract"], run_now: true }) });
+        $("#pipeOut").textContent = r.error ? r.error : `Processed ${r.result.videos} video(s); errors: ${r.result.results.flatMap(x => x.errors).length}.`;
+      };
+    };
+    load();
+  }
+
   /* ---------- router ---------- */
   function route() {
     cleanup(); cleanup = () => {};
@@ -3045,6 +3697,15 @@ python3 build.py --per-channel 0 # every upload, not just the latest 50</pre>
     else if ((m.search = h.match(/^search\/(.*)$/))) { markSide(""); viewSearch(decodeURIComponent(m.search[1])); }
     else if ((m.cat = h.match(/^t\/([\w-]+)$/))) { markSide(`t/${m.cat[1]}`); viewCat(m.cat[1]); }
     else if ((m.course = h.match(/^course\/([\w-]+)$/))) { markSide(`course/${m.course[1]}`); viewCourse(m.course[1]); }
+    else if (h === "ask") { markSide("ask"); viewAsk(); }
+    else if (h === "graph") { markSide("graph"); viewGraph(); }
+    else if (h === "vault") { markSide("vault"); viewVault(); }
+    else if (h === "paths") { markSide("paths"); viewPaths(); }
+    else if (h === "flashcards") { markSide("flashcards"); viewFlashcards(); }
+    else if (h === "research") { markSide("research"); viewResearch(); }
+    else if (h === "radar") { markSide("radar"); viewRadar(); }
+    else if (h === "analytics") { markSide("analytics"); viewAnalytics(); }
+    else if (h === "intel-settings") { markSide("intel-settings"); viewIntelSettings(); }
     else if (h === "about") { markSide("about"); viewAbout(); }
     else { markSide("home"); viewHome(); }
     renderCategories(); // refresh the chip badges after history changes

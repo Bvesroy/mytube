@@ -74,6 +74,67 @@ site/videos.json  the same data as plain JSON
 
 ---
 
+## 🕸️ The Knowledge Layer (3.0)
+
+My Tube 3.0 adds an optional local-first intelligence layer on top of your existing
+subscription library. It is additive: your existing library, ranking algorithm, standalone
+page and localStorage state are untouched. The intelligence layer is open source, runs
+against your own SQLite database, and degrades gracefully when the backend or optional AI
+is unavailable.
+
+What it adds:
+
+- **Knowledge graph.** A local graph of concepts, relations and video/channel nodes built
+  from stored transcripts and knowledge extracts, with confidence and provenance.
+- **Ask My Tube.** Questions answered from your stored transcripts, extracts and video
+  metadata, always with citations. A local LLM can rephrase answers when enabled, but only
+  after every citation is validated against supplied sources.
+- **Video-to-knowledge extraction.** Deterministic extraction of summaries, definitions,
+  terms, examples, formulas, code, timestamps, prerequisites and flashcard seeds, plus
+  concepts and relations. An optional local LLM path exists with the same citation rules.
+- **Cross-video comparison.** Side-by-side comparison of two or more videos using only
+  stored knowledge, with common and unique explanations, conservative conflict detection,
+  and saved research documents.
+- **Learning paths.** Prerequisite-ordered paths generated from a plain-language objective,
+  with stages, items, status, progress and honest missing-material reporting.
+- **Spaced repetition and flashcards.** FSRS-5 decks generated from extracted seeds,
+  due-card review, stats, export, import and restore.
+- **Chapters and navigation.** Auto-generated chapters only from timed transcripts, plus
+  timestamp bookmarks and per-video transcript search.
+- **Multi-perspective discovery.** Subscription-library discovery views that reuse the
+existing recommender and read the same video library.
+- **Interest timeline.** A time-bucketed view of exposure, engagement, completion, revision,
+  knowledge growth and inferred topic shifts.
+- **Discovery radar.** A subscription-only scan of your library for notable videos, with
+  saved reports and events, run on demand or as a job.
+
+What it does not do: it does not fetch YouTube transcripts, it does not include bundled
+speech-to-text, it does not phone home, it does not claim synchronization with a YouTube
+account's watch history, and it does not download or distribute model weights. AI is
+opt-in and local-only by default.
+
+### Running the backend
+
+```bash
+cd backend
+python3 -m venv .venv && . .venv/bin/activate
+pip install -e ".[dev]"
+MYTUBE_DATA_DIR=./mytube.db uvicorn app.main:app --reload --host 127.0.0.1 --port 8123
+```
+
+Then open `site/index.html`. The intelligence workspace is reachable from the app's nav;
+if the backend is not reachable the view shows an offline state and the rest of the app
+still works from the file.
+
+### Local AI (optional)
+
+Set `MYTUBE_AI_ENABLED=1` and point the platform at an already-running local LLM backend
+such as Ollama or llama.cpp. There is no default remote AI call and no automatic model
+download. If AI is not configured, the platform uses deterministic fallbacks for search,
+graph, Ask, comparison, embeddings and chapters.
+
+---
+
 ## 🧠 The Ranking Algorithm
 
 **For You**, the home shelves, and **Up Next** all run one hybrid recommender with the same general shape as YouTube's pipeline — candidate generation, ranking, re-ranking — except assembled from published open algorithms instead of a neural net with a server farm.

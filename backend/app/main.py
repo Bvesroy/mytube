@@ -7,10 +7,11 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api.intelligence import router as intelligence_router
 from app.api.v1 import router as v1_router
 from app.config import Settings, get_settings
 
@@ -19,7 +20,9 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    settings = get_settings()
+    # Use the settings the app was constructed with (tests and embedding); fall back
+    # to process settings for `uvicorn app.main:app`.
+    settings = getattr(app.state, "settings", None) or get_settings()
     database = None
     try:
         from app.db.engine import Database
@@ -54,6 +57,7 @@ def make_app(settings: Settings | None = None) -> FastAPI:
     )
 
     app.include_router(v1_router)
+    app.include_router(intelligence_router)
 
     @app.middleware("http")
     async def request_id_middleware(request: Request, call_next):

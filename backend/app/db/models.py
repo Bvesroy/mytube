@@ -430,6 +430,16 @@ class Transcript(Base):
     source: Mapped[str | None] = mapped_column(String(24))
     text: Mapped[str] = mapped_column(Text)
     fetched_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+    seq: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    content_hash: Mapped[str] = mapped_column(String(32), default="")
+    normalized_hash: Mapped[str] = mapped_column(String(32), default="")
+    word_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    segment_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    source_kind: Mapped[str | None] = mapped_column(String(24))
+    # supplied|creator|none - "none" means timestamps are unknown and must be reported as null.
+    timing_source: Mapped[str] = mapped_column(String(16), default="none", server_default="'none'")
+    provenance_json: Mapped[str | None] = mapped_column(Text)
+    updated_at: Mapped[int] = mapped_column(Integer, default=now_ms)
 
 
 class TranscriptSegment(Base):
@@ -451,6 +461,12 @@ class VideoChapter(Base):
     video_id: Mapped[int] = mapped_column(ForeignKey("videos.id", ondelete="CASCADE"))
     start_s: Mapped[int] = mapped_column(Integer)
     title: Mapped[str] = mapped_column(String(300))
+    # creator|generated|user - generated rows are always labelled in the API.
+    source: Mapped[str] = mapped_column(String(16), default="creator", server_default="'creator'")
+    confidence: Mapped[float] = mapped_column(default=0.0, server_default="0")
+    position: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    generated_at: Mapped[int | None] = mapped_column(Integer)
+    evidence_json: Mapped[str | None] = mapped_column(Text)
 
 
 # ---------------------------------------------------------------- recommenders
@@ -538,3 +554,332 @@ class SchemaVersion(Base):
 
     version: Mapped[int] = mapped_column(primary_key=True)
     applied_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+
+
+# ---------------------------------------------------------------- intelligence (My Tube 3.0)
+
+
+class Concept(Base):
+    """A topic or concept extracted from the user's own library.
+
+    `origin` records where the row came from; nothing is invented without a stored
+    `ProcessingProvenance` / evidence link.
+    """
+
+    __tablename__ = "concepts"
+    __table_args__ = (
+        UniqueConstraint("slug", name="uq_concepts_slug"),
+        Index("ix_concepts_kind", "kind"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    slug: Mapped[str] = mapped_column(String(200))
+    name: Mapped[str] = mapped_column(String(200))
+    kind: Mapped[str] = mapped_column(String(16), default="concept")  # topic|concept
+    description: Mapped[str | None] = mapped_column(Text)
+    aliases_json: Mapped[str | None] = mapped_column(Text)
+    origin: Mapped[str] = mapped_column(String(24), default="extracted")
+    created_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+    updated_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+
+
+class ConceptRelation(Base):
+    __tablename__ = "concept_relations"
+    __table_args__ = (
+        Index("ix_relations_src", "src_concept_id"),
+        Index("ix_relations_dst", "dst_concept_id"),
+    )
+
+    src_concept_id: Mapped[int] = mapped_column(
+        ForeignKey("concepts.id", ondelete="CASCADE"), primary_key=True
+    )
+    dst_concept_id: Mapped[int] = mapped_column(
+        ForeignKey("concepts.id", ondelete="CASCADE"), primary_key=True
+    )
+    relation: Mapped[str] = mapped_column(String(24), primary_key=True)  # prerequisite|related
+    confidence: Mapped[float] = mapped_column(default=0.5, server_default=text("0.5"))
+    provenance_json: Mapped[str | None] = mapped_column(Text)
+    evidence_video_id: Mapped[int | None] = mapped_column(
+        ForeignKey("videos.id", ondelete="SET NULL")
+    )
+    created_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+
+
+class VideoConcept(Base):
+    __tablename__ = "video_concepts"
+    __table_args__ = (
+        Index("ix_video_concepts_concept", "concept_id", "weight"),
+    )
+
+    video_id: Mapped[int] = mapped_column(
+        ForeignKey("videos.id", ondelete="CASCADE"), primary_key=True
+    )
+    concept_id: Mapped[int] = mapped_column(
+        ForeignKey("concepts.id", ondelete="CASCADE"), primary_key=True
+    )
+    weight: Mapped[float] = mapped_column(default=1.0, server_default=text("1.0"))
+    provenance: Mapped[str] = mapped_column(String(24), default="extracted")
+    confidence: Mapped[float] = mapped_column(default=0.5, server_default=text("0.5"))
+    created_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+
+
+class KnowledgeExtract(Base):
+    __tablename__ = "knowledge_extracts"
+    __table_args__ = (
+        Index("ix_extracts_video_kind", "video_id", "kind"),
+        Index("ix_extracts_hash", "content_hash"),
+        UniqueConstraint("video_id", "kind", "content_hash", name="uq_extracts_video_kind_hash"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    video_id: Mapped[int] = mapped_column(ForeignKey("videos.id", ondelete="CASCADE"))
+    kind: Mapped[str] = mapped_column(String(24))
+    content: Mapped[str] = mapped_column(Text)
+    detail: Mapped[str | None] = mapped_column(Text)
+    start_s: Mapped[float | None] = mapped_column()
+    end_s: Mapped[float | None] = mapped_column()
+    confidence: Mapped[float] = mapped_column(default=0.5, server_default=text("0.5"))
+    source: Mapped[str] = mapped_column(String(16), default="deterministic")
+    model_id: Mapped[str] = mapped_column(String(60), default="deterministic-v1")
+    content_hash: Mapped[str] = mapped_column(String(32))
+    edited: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    rejected: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    provenance_json: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+    updated_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+
+
+class EmbeddingVector(Base):
+    __tablename__ = "embedding_vectors"
+    __table_args__ = (
+        UniqueConstraint("owner_type", "owner_id", "model_id", name="uq_embedding_owner_model"),
+        Index("ix_embeddings_model", "model_id"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_type: Mapped[str] = mapped_column(String(16))  # video|segment|concept|extract|channel
+    owner_id: Mapped[int] = mapped_column(Integer)
+    model_id: Mapped[str] = mapped_column(String(60))
+    dim: Mapped[int] = mapped_column(Integer)
+    vector: Mapped[bytes] = mapped_column(LargeBinary)
+    norm: Mapped[float] = mapped_column(default=1.0)
+    content_hash: Mapped[str] = mapped_column(String(32), default="")
+    created_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+
+
+class FlashcardDeck(Base):
+    __tablename__ = "flashcard_decks"
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    name: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str | None] = mapped_column(Text)
+    archived: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    created_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+    updated_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+
+
+class Flashcard(Base):
+    __tablename__ = "flashcards"
+    __table_args__ = (
+        Index("ix_flashcards_due", "status", "due_at"),
+        Index("ix_flashcards_video", "video_id"),
+        UniqueConstraint("deck_id", "content_hash", name="uq_flashcards_deck_hash"),
+    )
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    deck_id: Mapped[str] = mapped_column(ForeignKey("flashcard_decks.id", ondelete="CASCADE"))
+    video_id: Mapped[int | None] = mapped_column(ForeignKey("videos.id", ondelete="SET NULL"))
+    extract_id: Mapped[int | None] = mapped_column(
+        ForeignKey("knowledge_extracts.id", ondelete="SET NULL")
+    )
+    card_type: Mapped[str] = mapped_column(String(24), default="question_answer")
+    front: Mapped[str] = mapped_column(Text)
+    back: Mapped[str] = mapped_column(Text)
+    source_start_s: Mapped[float | None] = mapped_column()
+    source_excerpt: Mapped[str | None] = mapped_column(Text)
+    origin: Mapped[str] = mapped_column(String(12), default="auto")
+    status: Mapped[str] = mapped_column(String(12), default="active")  # active|deleted
+    state: Mapped[str] = mapped_column(String(12), default="new")
+    stability: Mapped[float] = mapped_column(default=0.0, server_default=text("0"))
+    difficulty: Mapped[float] = mapped_column(default=0.0, server_default=text("0"))
+    due_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+    reps: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    lapses: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    last_review_at: Mapped[int | None] = mapped_column(Integer)
+    content_hash: Mapped[str] = mapped_column(String(32), default="")
+    created_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+    updated_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+
+
+class ReviewLog(Base):
+    __tablename__ = "review_logs"
+    __table_args__ = (Index("ix_reviews_card", "card_id", "reviewed_at"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    card_id: Mapped[str] = mapped_column(ForeignKey("flashcards.id", ondelete="CASCADE"))
+    rating: Mapped[int] = mapped_column(Integer)
+    state_before: Mapped[str] = mapped_column(String(12))
+    state_after: Mapped[str] = mapped_column(String(12))
+    stability: Mapped[float] = mapped_column(default=0.0)
+    difficulty: Mapped[float] = mapped_column(default=0.0)
+    scheduled_days: Mapped[float] = mapped_column(default=0.0)
+    elapsed_days: Mapped[float] = mapped_column(default=0.0)
+    retrievability: Mapped[float] = mapped_column(default=0.0)
+    due_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+    reviewed_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+
+
+class LearningPath(Base):
+    __tablename__ = "learning_paths"
+    __table_args__ = (Index("ix_paths_status", "status", "updated_at"),)
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    objective: Mapped[str] = mapped_column(Text)
+    level: Mapped[str] = mapped_column(String(16), default="auto")
+    status: Mapped[str] = mapped_column(String(12), default="active")
+    summary: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+    updated_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+
+
+class LearningPathStage(Base):
+    __tablename__ = "learning_path_stages"
+    __table_args__ = (Index("ix_path_stages_path", "path_id", "position"),)
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    path_id: Mapped[str] = mapped_column(
+        ForeignKey("learning_paths.id", ondelete="CASCADE")
+    )
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    title: Mapped[str] = mapped_column(String(200))
+    level: Mapped[str] = mapped_column(String(16), default="beginner")
+    concept_id: Mapped[int | None] = mapped_column(
+        ForeignKey("concepts.id", ondelete="SET NULL")
+    )
+
+
+class LearningPathItem(Base):
+    __tablename__ = "learning_path_items"
+    __table_args__ = (Index("ix_path_items_stage", "stage_id", "position"),)
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    stage_id: Mapped[str] = mapped_column(
+        ForeignKey("learning_path_stages.id", ondelete="CASCADE")
+    )
+    video_id: Mapped[int] = mapped_column(ForeignKey("videos.id", ondelete="CASCADE"))
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(12), default="todo")
+    reason: Mapped[str | None] = mapped_column(Text)
+    completed_at: Mapped[int | None] = mapped_column(Integer)
+
+
+class ResearchDocument(Base):
+    __tablename__ = "research_documents"
+    __table_args__ = (Index("ix_research_kind", "kind", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(24), default="note")
+    title: Mapped[str] = mapped_column(String(300))
+    body_json: Mapped[str] = mapped_column(Text)
+    archived: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    created_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+    updated_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+
+
+class VideoComparison(Base):
+    __tablename__ = "video_comparisons"
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    document_id: Mapped[str] = mapped_column(
+        ForeignKey("research_documents.id", ondelete="CASCADE"), unique=True
+    )
+    video_ids_json: Mapped[str] = mapped_column(Text)
+    objective: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+
+
+class TimestampBookmark(Base):
+    __tablename__ = "timestamp_bookmarks"
+    __table_args__ = (Index("ix_ts_bookmarks_video", "video_id", "timestamp_s"),)
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    video_id: Mapped[int] = mapped_column(ForeignKey("videos.id", ondelete="CASCADE"))
+    timestamp_s: Mapped[float] = mapped_column()
+    label: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+
+
+class DiscoveryReport(Base):
+    __tablename__ = "discovery_reports"
+    __table_args__ = (Index("ix_discovery_reports_at", "generated_at"),)
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    period: Mapped[str] = mapped_column(String(12))  # daily|weekly|manual
+    generated_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+    window_start: Mapped[int | None] = mapped_column(Integer)
+    window_end: Mapped[int | None] = mapped_column(Integer)
+    summary_json: Mapped[str] = mapped_column(Text, default="{}")
+
+
+class DiscoveryEvent(Base):
+    __tablename__ = "discovery_events"
+    __table_args__ = (
+        Index("ix_discovery_events_report", "report_id"),
+        Index("ix_discovery_events_kind", "kind", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    report_id: Mapped[str] = mapped_column(
+        ForeignKey("discovery_reports.id", ondelete="CASCADE")
+    )
+    kind: Mapped[str] = mapped_column(String(32))
+    video_id: Mapped[int | None] = mapped_column(
+        ForeignKey("videos.id", ondelete="SET NULL")
+    )
+    channel_id: Mapped[int | None] = mapped_column(
+        ForeignKey("channels.id", ondelete="SET NULL")
+    )
+    score: Mapped[float] = mapped_column(default=0.0)
+    reason: Mapped[str] = mapped_column(Text)
+    payload_json: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(12), default="new")
+    created_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+
+
+class ModelConfig(Base):
+    __tablename__ = "model_configs"
+    __table_args__ = (
+        UniqueConstraint("role", "provider", "model", name="uq_model_role_provider_model"),
+    )
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    role: Mapped[str] = mapped_column(String(24))  # llm|embedding|transcription
+    provider: Mapped[str] = mapped_column(String(40))  # ollama|llamacpp|hash|sentence-transformers
+    model: Mapped[str] = mapped_column(String(120))
+    endpoint: Mapped[str | None] = mapped_column(String(300))
+    enabled: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    config_json: Mapped[str | None] = mapped_column(Text)
+    updated_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+
+
+class ProcessingProvenance(Base):
+    __tablename__ = "processing_provenance"
+    __table_args__ = (Index("ix_provenance_entity", "entity_type", "entity_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    entity_type: Mapped[str] = mapped_column(String(24))
+    entity_id: Mapped[str] = mapped_column(String(64))
+    step: Mapped[str] = mapped_column(String(32))
+    model_id: Mapped[str | None] = mapped_column(String(60))
+    content_hash: Mapped[str | None] = mapped_column(String(32))
+    status: Mapped[str] = mapped_column(String(16), default="ok")
+    detail_json: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+
+
+class PipelineConfig(Base):
+    __tablename__ = "pipeline_config"
+
+    key: Mapped[str] = mapped_column(String(60), primary_key=True)
+    value_json: Mapped[str] = mapped_column(Text, default="null")
+    updated_at: Mapped[int] = mapped_column(Integer, default=now_ms)

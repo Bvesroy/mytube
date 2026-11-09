@@ -17,6 +17,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.fts import create_fts, fts_exists
+from app.db.intel_fts import create_intel_fts, intel_fts_exists
 
 PRAGMAS = (
     "PRAGMA journal_mode=WAL",
@@ -73,8 +74,11 @@ class Database:
 
         Base.metadata.create_all(self.engine)
         _ensure_watch_history_phase2(self.engine)
+        _ensure_intelligence_columns(self.engine)
         if not fts_exists(self.engine):
             create_fts(self.engine)
+        if not intel_fts_exists(self.engine):
+            create_intel_fts(self.engine)
         from app.db.models import SchemaVersion
         with self.engine.begin() as conn:
             conn.execute(
@@ -97,8 +101,11 @@ class Database:
         from app.db.models import Base
 
         Base.metadata.create_all(self.engine)
+        _ensure_intelligence_columns(self.engine)
         if not fts_exists(self.engine):
             create_fts(self.engine)
+        if not intel_fts_exists(self.engine):
+            create_intel_fts(self.engine)
         from app.db.models import SchemaVersion
         with self.engine.begin() as conn:
             conn.execute(
@@ -184,3 +191,44 @@ def _ensure_watch_history_phase2(engine: Engine) -> None:
         conn.exec_driver_sql('CREATE INDEX IF NOT EXISTS ix_watch_sessions_video ON watch_sessions (video_id, started_at)')
         conn.exec_driver_sql('CREATE INDEX IF NOT EXISTS ix_watch_sessions_started ON watch_sessions (started_at)')
         conn.exec_driver_sql('CREATE INDEX IF NOT EXISTS ix_watch_sessions_status ON watch_sessions (status, updated_at)')
+
+
+def _ensure_intelligence_columns(engine: Engine) -> None:
+    """Additive My Tube 3.0 columns for existing databases (idempotent)."""
+    additions = {
+        "transcripts": {
+            "content_hash": "VARCHAR(32) NOT NULL DEFAULT ''",
+            "normalized_hash": "VARCHAR(32) NOT NULL DEFAULT ''",
+            "word_count": "INTEGER NOT NULL DEFAULT 0",
+            "segment_count": "INTEGER NOT NULL DEFAULT 0",
+            "source_kind": "VARCHAR(24)",
+            "timing_source": "VARCHAR(16) NOT NULL DEFAULT 'none'",
+            "seq": "INTEGER NOT NULL DEFAULT 0",
+            "provenance_json": "TEXT",
+            "updated_at": "INTEGER",
+        },
+        "video_chapters": {
+            "source": "VARCHAR(16) NOT NULL DEFAULT 'creator'",
+            "confidence": "REAL NOT NULL DEFAULT 0",
+            "position": "INTEGER NOT NULL DEFAULT 0",
+            "generated_at": "INTEGER",
+            "evidence_json": "TEXT",
+        },
+    }
+    with engine.begin() as conn:
+        for table, cols in additions.items():
+            try:
+                existing = {row[1] for row in conn.exec_driver_sql(f'PRAGMA table_info("{table}")')}
+            except Exception:
+                continue
+            if not existing:
+                continue
+            for name, ddl in cols.items():
+                if name not in existing:
+                    conn.exec_driver_sql(f'ALTER TABLE "{table}" ADD COLUMN "{name}" {ddl}')
+        conn.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS ix_chapters_video ON video_chapters (video_id, start_s)"
+        )
+        conn.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS ix_segments_transcript ON transcript_segments (transcript_id, start_s)"
+        )
