@@ -54,8 +54,18 @@
 - [ ] Resume-from-position UI, richer player controls, robust offline/retry queue for history events.
 - [ ] Full settings page integration beyond watch-view selector; import of local playback preference on first backend connect.
 
-### Phase 4–7
-- Phase 4: Recommendation integration (consume watch events; preserve algorithms/weights).
+### Phase 4 — Recommendation integration (PARTIAL)
+**Verified (backend):** `backend/tests/test_recommendations.py` (3 tests) + full backend suite **33 passed** (`cd backend && python3 -m pytest tests/ -v`).
+
+**Implemented (minimal, preserves engine):**
+- [x] `backend/app/services/recommendations.py` now **consumes My Tube watch events** (`WatchHistory`) to populate the `negative` feature (completed/strong engagement => conservative penalty), feeding the same `DEFAULT_W`/`score()`/MMR engine. Algorithms and weight definitions preserved.
+- [x] Fixed recommendation adapter glue to match domain contracts (feature vector in `FEATURES` order, `weight_vector` for 10-feature overrides, defensive watch-field access). No rewrite of scoring/MMR algorithms or default weights.
+
+**Not fully verified / still open:**
+- [ ] End-to-end `/api/v1/recommends` behavior against real library data + frontend/backend recommender UX alignment (frontend still has its own scoring in `site/index.html`).
+- [ ] Richer session/rating signals, evaluation metrics, and parity checks vs frontend scoring where intended.
+
+### Phase 5–7
 - Phase 5: Worker/yt-dlp incremental sync.
 - Phase 6: Frontend adapter + settings + safe localStorage migration (only when backend contracts stable).
 - Phase 7: Security/perf/release readiness + full quality gate evidence.
@@ -70,5 +80,6 @@
 - **Implemented but not fully verified:** broader v1 contract/edge-case coverage (all resources, malformed pagination/DB-error paths, transaction-leak checks), history filtering/date-range completeness, LAN destructive-endpoint hardening under existing auth model.
 - **Partially implemented:** complete v1 API alignment, user-state apply, jobs/worker runtime + yt-dlp adapters, recommendation consumption of watch events.
 - **Partially implemented (MVP, needs browser E2E):** Phase 3 playback integration/settings in watch view + backend preference + truthful embedded/external history hooks (`site/index.html` patched; standalone fallback preserved).
-- **Not implemented (this session):** full Phase 3 E2E/resume/offline queue, recommendation integration (Phase 4), yt-dlp E2E jobs/incremental sync (Phase 5), complete frontend adapter + safe localStorage migration (Phase 6), perf benchmarks/release readiness (Phase 7).
+- **Partially implemented (MVP):** recommendation integration consumes My Tube watch events in backend recommender (`negative` feature) with algorithms/weights preserved; needs real-data/E2E/parity verification.
+- **Not implemented (this session):** full Phase 3 E2E/resume/offline queue, richer recommendation signals/parity, yt-dlp E2E jobs/incremental sync (Phase 5), complete frontend adapter + safe localStorage migration (Phase 6), perf benchmarks/release readiness (Phase 7).
 - **Blocked by external platform limitations (by design):** confirmed write/sync of arbitrary views to YouTube account watch history via supported APIs is **not** assumed or claimed. External YouTube playback is recorded as My Tube-initiated only (`youtube_history_confirmed: false` always).
