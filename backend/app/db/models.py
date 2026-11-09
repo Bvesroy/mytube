@@ -218,16 +218,59 @@ class BackgroundJob(Base):
 
 
 class WatchHistory(Base):
+    """Aggregated per-video My Tube watch state (backward-compatible base + Phase 2 fields)."""
     __tablename__ = "watch_history"
-    __table_args__ = (Index("ix_history_watched", "watched_at"),)
+    __table_args__ = (
+        Index("ix_history_watched", "watched_at"),
+        Index("ix_history_last_watched", "last_watched_at"),
+    )
 
     video_id: Mapped[int] = mapped_column(
         ForeignKey("videos.id", ondelete="CASCADE"), primary_key=True
     )
+    # Legacy fields kept for compatibility with existing user_state import/export.
     watched_at: Mapped[int] = mapped_column(Integer, default=now_ms)
     engagement: Mapped[float] = mapped_column(default=1.0, server_default=text("1.0"))
     position_s: Mapped[float | None] = mapped_column()
     completed: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    # Phase 2 dual-history foundation (nullable for additive migration).
+    channel_id: Mapped[int | None] = mapped_column(ForeignKey("channels.id", ondelete="SET NULL"))
+    first_watched_at: Mapped[int | None] = mapped_column(Integer)
+    last_watched_at: Mapped[int | None] = mapped_column(Integer)
+    total_watch_s: Mapped[float | None] = mapped_column()
+    watch_count: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    # 'embedded' or 'external_youtube' (My Tube playback source). Never means confirmed YouTube history.
+    playback_source: Mapped[str | None] = mapped_column(String(24))
+    last_session_id: Mapped[str | None] = mapped_column(String(40))
+    # Timestamp when user initiated external YouTube playback from My Tube (NOT confirmed YouTube watch).
+    external_initiated_at: Mapped[int | None] = mapped_column(Integer)
+
+
+class WatchSession(Base):
+    """Individual My Tube playback session. YouTube account history is NOT tracked here."""
+    __tablename__ = "watch_sessions"
+    __table_args__ = (
+        Index("ix_watch_sessions_video", "video_id", "started_at"),
+        Index("ix_watch_sessions_started", "started_at"),
+        Index("ix_watch_sessions_status", "status", "updated_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    video_id: Mapped[int] = mapped_column(ForeignKey("videos.id", ondelete="CASCADE"))
+    channel_id: Mapped[int | None] = mapped_column(ForeignKey("channels.id", ondelete="SET NULL"))
+    started_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+    updated_at: Mapped[int] = mapped_column(Integer, default=now_ms)
+    ended_at: Mapped[int | None] = mapped_column(Integer)
+    position_s: Mapped[float] = mapped_column(default=0.0, server_default=text("0"))
+    duration_s: Mapped[float | None] = mapped_column()
+    watched_s: Mapped[float] = mapped_column(default=0.0, server_default=text("0"))
+    completed: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    # 'embedded' or 'external_youtube'
+    playback_source: Mapped[str] = mapped_column(String(24), default="embedded")
+    status: Mapped[str] = mapped_column(String(16), default="active")  # active/completed/abandoned
+    # For external_youtube: records initiation only. Never set as confirmed YouTube account history.
+    external_initiated_at: Mapped[int | None] = mapped_column(Integer)
+    meta_json: Mapped[str | None] = mapped_column(Text)
 
 
 class RecommendationEvent(Base):

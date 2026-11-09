@@ -32,7 +32,8 @@ A local-first FastAPI + SQLite backend skeleton exists in `backend/` alongside t
 | Search | FTS5 search returns relevant hits for imported content | ✅ |
 | Recommendations | Scoring/weights primitives preserved; service interface exists | ✅ (core) |
 | Jobs | DB job model + service scaffolding present | ⚠️ partial |
-| Tests | Automated tests cover migrations, importer, search, domain primitives, and API integration smoke | ✅ (22 tests, core+API) |
+| Watch history (Phase 2) | `watch_sessions` + aggregated `watch_history`, additive migration, idempotent history service/APIs, truthful dual-history semantics (`youtube_history_confirmed=false`) | ✅ (core, verified) |
+| Tests | Automated tests cover migrations, importer, search, domain primitives, API integration smoke, and Phase 2 watch-history foundation | ✅ (29 tests) |
 | Docs | Audit, architecture, DB, API, roadmap docs present | ✅ |
 
 ## Next milestones

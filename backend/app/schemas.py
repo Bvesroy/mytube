@@ -176,3 +176,69 @@ class UserSettingsOut(BaseModel):
     requires_auth: bool
     docs_url: str = "/docs"
     openapi_url: str = "/openapi.json"
+
+
+# ------------------------------------------------------------------ watch history (Phase 2, dual-history)
+
+class HistoryStartRequest(BaseModel):
+    video_id: str = Field(..., min_length=1, max_length=64)
+    playback_source: str = Field("embedded", pattern=r"^(embedded|external_youtube)$")
+    session_id: str | None = Field(None, max_length=40)
+    position_s: float | None = Field(None, ge=0)
+    duration_s: float | None = Field(None, ge=0)
+    meta: dict[str, Any] | None = None
+
+
+class HistoryProgressRequest(BaseModel):
+    session_id: str = Field(..., min_length=1, max_length=40)
+    position_s: float | None = Field(None, ge=0)
+    watched_delta_s: float | None = Field(None, ge=0)
+    duration_s: float | None = Field(None, ge=0)
+    completed: bool | None = None
+
+
+class HistoryCompleteRequest(BaseModel):
+    session_id: str = Field(..., min_length=1, max_length=40)
+    position_s: float | None = Field(None, ge=0)
+    watched_s: float | None = Field(None, ge=0)
+    completed: bool = True
+
+
+class HistorySessionOut(BaseModel):
+    session_id: str
+    video_id: int
+    channel_id: int | None = None
+    status: str
+    playback_source: str
+    position_s: float = 0.0
+    watched_s: float = 0.0
+    completed: bool = False
+    started_at: int
+    updated_at: int
+    ended_at: int | None = None
+    # Truthful: external initiation is NOT confirmed YouTube account history.
+    external_initiated_at: int | None = None
+    youtube_history_confirmed: bool = False
+
+
+class HistoryItemOut(BaseModel):
+    video_id: str
+    channel_id: str | None = None
+    title: str | None = None
+    channel_name: str | None = None
+    first_watched_at: int | None = None
+    last_watched_at: int | None = None
+    position_s: float | None = None
+    total_watch_s: float | None = None
+    completed: bool = False
+    watch_count: int = 0
+    playback_source: str | None = None
+    last_session_id: str | None = None
+    mytube_recorded: bool = True
+    external_youtube_initiated_at: int | None = None
+    youtube_history_confirmed: bool = False
+
+
+class HistoryListOut(BaseModel):
+    items: list[HistoryItemOut] = Field(default_factory=list)
+    next_cursor: str | None = None

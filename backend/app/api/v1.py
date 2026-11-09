@@ -25,6 +25,12 @@ from app.repositories.user_state import export_state
 from app.schemas import (
     ChannelSummary,
     JobStatus,
+    HistoryCompleteRequest,
+    HistoryItemOut,
+    HistoryListOut,
+    HistoryProgressRequest,
+    HistorySessionOut,
+    HistoryStartRequest,
     KnobUpdate,
     LocalStorageState,
     RecommendationItem,
@@ -39,6 +45,8 @@ from app.schemas import (
 )
 from app.services.recommendations import recommend
 from app.services.search import search_videos
+from app.services import history as history_svc
+from app.services.history import HistoryError
 
 logger = logging.getLogger(__name__)
 
@@ -354,3 +362,132 @@ def _search_hit(hit, session: Session) -> SearchHitOut:
         rank=round(hit.rank, 3),
         channel=_channel_summary(ch) if ch else None,
     )
+
+
+# ------------------------------------------------------------------ watch history (Phase 2)
+
+def _history_session_out(ws):
+    v = None
+    try:
+        v = ws.video_id
+    except Exception:
+        pass
+    return HistorySessionOut(
+        session_id=ws.id,
+        video_id=int(ws.video_id),
+        channel_id=int(ws.channel_id) if ws.channel_id is not None else None,
+        status=ws.status,
+        playback_source=ws.playback_source,
+        position_s=float(ws.position_s or 0),
+        watched_s=float(ws.watched_s or 0),
+        completed=bool(ws.completed),
+        started_at=int(ws.started_at),
+        updated_at=int(ws.updated_at),
+        ended_at=int(ws.ended_at) if ws.ended_at is not None else None,
+        external_initiated_at=int(ws.external_initiated_at) if ws.external_initiated_at else None,
+        youtube_history_confirmed=False,
+    )
+
+
+@router.post("/history/start", tags=["history"], response_model=HistorySessionOut)
+def history_start(request: Request, body: HistoryStartRequest):
+    session = get_db(request)
+    try:
+        ws = history_svc.start_session(
+            session,
+            video_id=body.video_id,
+            playback_source=body.playback_source,
+            session_id=body.session_id,
+            position_s=body.position_s,
+            duration_s=body.duration_s,
+            meta=body.meta,
+        )
+        session.commit()
+        return _history_session_out(ws)
+    except HistoryError as exc:
+        session.rollback()
+        msg = str(exc)
+        code = 404 if "not found" in msg else 400
+        raise HTTPException(status_code=code, detail=msg) from exc
+
+
+@router.post("/history/progress", tags=["history"], response_model=HistorySessionOut)
+def history_progress(request: Request, body: HistoryProgressRequest):
+    session = get_db(request)
+    try:
+        ws = history_svc.record_progress(
+            session,
+            session_id=body.session_id,
+            position_s=body.position_s,
+            watched_delta_s=body.watched_delta_s,
+            duration_s=body.duration_s,
+            completed=body.completed,
+        )
+        session.commit()
+        return _history_session_out(ws)
+    except HistoryError as exc:
+        session.rollback()
+        msg = str(exc)
+        code = 404 if "not found" in msg else 400
+        raise HTTPException(status_code=code, detail=msg) from exc
+
+
+@router.post("/history/complete", tags=["history"], response_model=HistorySessionOut)
+def history_complete(request: Request, body: HistoryCompleteRequest):
+    session = get_db(request)
+    try:
+        ws = history_svc.complete_session(
+            session,
+            session_id=body.session_id,
+            position_s=body.position_s,
+            watched_s=body.watched_s,
+            completed=body.completed,
+        )
+        session.commit()
+        return _history_session_out(ws)
+    except HistoryError as exc:
+        session.rollback()
+        msg = str(exc)
+        code = 404 if "not found" in msg else 400
+        raise HTTPException(status_code=code, detail=msg) from exc
+
+
+@router.get("/history", tags=["history"], response_model=HistoryListOut)
+def history_list(
+    request: Request,
+    limit: int = Query(100, ge=1, le=500),
+    cursor: str | None = None,
+    channel_id: str | None = None,
+):
+    session = get_db(request)
+    items, next_cursor = history_svc.get_history(session, limit=limit, cursor=cursor, channel_id=channel_id)
+    return HistoryListOut(items=[HistoryItemOut(**it) for it in items], next_cursor=next_cursor)
+
+
+@router.get("/history/{video_id}", tags=["history"])
+def history_get(request: Request, video_id: str):
+    session = get_db(request)
+    item = history_svc.get_video_history(session, video_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="history not found")
+    return HistoryItemOut(**item)
+
+
+@router.delete("/history/{video_id}", tags=["history"])
+def history_delete_video(request: Request, video_id: str):
+    session = get_db(request)
+    ok = history_svc.delete_video_history(session, video_id)
+    if not ok:
+        session.rollback()
+        raise HTTPException(status_code=404, detail="history not found")
+    session.commit()
+    return {"deleted": True, "video_id": video_id}
+
+
+@router.delete("/history", tags=["history"])
+def history_clear(request: Request):
+    # Local-first app; destructive action. Keep behavior explicit.
+    session = get_db(request)
+    result = history_svc.clear_all_history(session)
+    session.commit()
+    return {"cleared": True, **result}

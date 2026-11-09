@@ -72,6 +72,7 @@ class Database:
         from app.db.models import Base
 
         Base.metadata.create_all(self.engine)
+        _ensure_watch_history_phase2(self.engine)
         if not fts_exists(self.engine):
             create_fts(self.engine)
         from app.db.models import SchemaVersion
@@ -156,3 +157,30 @@ def optimize(engine: Engine) -> None:
     with engine.connect() as conn:
         conn.exec_driver_sql("PRAGMA optimize")
         conn.exec_driver_sql("INSERT INTO video_fts(video_fts) VALUES('optimize')")
+
+
+def _ensure_watch_history_phase2(engine: Engine) -> None:
+    """Additive Phase 2 dual-history columns for existing watch_history tables."""
+    wanted = {
+        "channel_id": "INTEGER REFERENCES channels(id) ON DELETE SET NULL",
+        "first_watched_at": "INTEGER",
+        "last_watched_at": "INTEGER",
+        "total_watch_s": "REAL",
+        "watch_count": "INTEGER NOT NULL DEFAULT 0",
+        "playback_source": "VARCHAR(24)",
+        "last_session_id": "VARCHAR(40)",
+        "external_initiated_at": "INTEGER",
+    }
+    with engine.begin() as conn:
+        try:
+            cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(watch_history)")}
+        except Exception:
+            return
+        for name, ddl in wanted.items():
+            if name not in cols:
+                conn.exec_driver_sql(f'ALTER TABLE watch_history ADD COLUMN "{name}" {ddl}')
+        # indexes (idempotent)
+        conn.exec_driver_sql('CREATE INDEX IF NOT EXISTS ix_history_last_watched ON watch_history (last_watched_at)')
+        conn.exec_driver_sql('CREATE INDEX IF NOT EXISTS ix_watch_sessions_video ON watch_sessions (video_id, started_at)')
+        conn.exec_driver_sql('CREATE INDEX IF NOT EXISTS ix_watch_sessions_started ON watch_sessions (started_at)')
+        conn.exec_driver_sql('CREATE INDEX IF NOT EXISTS ix_watch_sessions_status ON watch_sessions (status, updated_at)')

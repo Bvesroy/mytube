@@ -15,6 +15,8 @@ def test_fresh_db_creates_core_tables(temp_db):
     assert "background_jobs" in names
     assert "schema_version" in names
     assert "video_fts" in names
+    assert "watch_history" in names
+    assert "watch_sessions" in names
 
 
 def test_schema_version_seeded(temp_db):

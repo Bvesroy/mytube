@@ -23,11 +23,25 @@
 - [ ] Verify DB session/transaction behavior under error paths (no leaks/partial commits).
 - [ ] Run/document quality gate with actual evidence artifacts (current strict gate remains **BLOCKED** without supplied reports).
 
-### Phase 2–7
-Not started. Next after Phase 1 stabilization:
-- Phase 2: Watch history foundation (schema/migrations/services/APIs, idempotent session+aggregated history).
-- Phase 3: Playback integration (embedded + external YouTube mode; honest dual-history semantics).
-- Phase 4: Recommendation integration (consume watch events; preserve algorithms).
+### Phase 2 — Watch history foundation (IN PROGRESS, core backend implemented & verified)
+**Verified this pass (actual test run):** `29 passed, 1 warning in 0.34s` (`cd backend && python3 -m pytest tests/ -v`), including `backend/tests/test_history.py` (7 tests).
+
+**Implemented (additive, backward-compatible):**
+- [x] Schema: extended `watch_history` (aggregated, per-video, legacy fields preserved) with Phase 2 fields (`channel_id`, `first/last_watched_at`, `total_watch_s`, `watch_count`, `playback_source`, `last_session_id`, `external_initiated_at`) + added `watch_sessions` (individual sessions). Models in `backend/app/db/models.py`.
+- [x] Migrations: idempotent additive migration helper in `app/db/engine.py` (`_ensure_watch_history_phase2`, pragma-based `ALTER TABLE` for existing DBs) + Alembic migration `backend/migrations/versions/002_watch_history.py`. Fresh DBs create both tables via `create_all`.
+- [x] Service: `backend/app/services/history.py` — idempotent `start_session` (client `session_id` supported), `record_progress`, `complete_session`, list/get/delete/clear. Validates video IDs, clamps/validates numeric inputs (no blind trust of arbitrary durations), updates both session and aggregate.
+- [x] API: `POST /api/v1/history/start|progress|complete`, `GET /api/v1/history`, `GET /api/v1/history/{video_id}`, `DELETE /api/v1/history/{video_id}`, `DELETE /api/v1/history` (destructive; local-first model). Schemas added to `backend/app/schemas.py`.
+- [x] Dual-history truthfulness: `playback_source='external_youtube'` records **My Tube initiation** (`external_initiated_at`) only. Responses always include `youtube_history_confirmed: false` (never assumed/verified). External playback is **not** falsely marked completed/confirmed as YouTube history.
+- [x] Tests: idempotent start, progress/complete, repeated progress does not duplicate session rows, external_youtube initiation-only semantics, list/delete, unknown video/session rejected.
+
+**Still open in Phase 2:**
+- [ ] Broader edge-case/transaction-leak tests (interrupted session recovery rules, malformed pagination across all filters, DB error paths), date-range filtering completeness.
+- [ ] History import/migration path from existing frontend `localStorage` `mytube-history` (deferred to Phase 6 adapter; schema/service supports it).
+- [ ] Full LAN/non-loopback destructive-endpoint protection integration (follow existing local-access/auth model; not newly invented).
+
+### Phase 3–7
+- Phase 3: Playback integration (embedded IFrame events + external YouTube mode/settings; both update My Tube history; honest semantics).
+- Phase 4: Recommendation integration (consume watch events; preserve algorithms/weights).
 - Phase 5: Worker/yt-dlp incremental sync.
 - Phase 6: Frontend adapter + settings + safe localStorage migration (only when backend contracts stable).
 - Phase 7: Security/perf/release readiness + full quality gate evidence.
@@ -38,8 +52,8 @@ Not started. Next after Phase 1 stabilization:
 - Changes kept focused and reversible.
 
 ### Status classification (current)
-- **Implemented and verified:** migrations/FTS, integrity check, importer, search service, domain weights/primitives, 22 backend tests passing (core + API integration smoke).
-- **Implemented but not fully verified:** key v1 HTTP endpoints (health/settings/stats/categories/search/jobs list/recommendations mapping/channel detail basics) respond in tests; full contract/edge-case coverage incomplete.
-- **Partially implemented:** complete v1 API surface alignment, user-state apply, jobs/worker runtime + yt-dlp adapters, recommendations end-to-end behavior across all knobs/filters.
-- **Not implemented (this session):** dual watch-history schema/APIs (Phase 2), playback integration/settings (Phase 3), recommendation consumption of watch events (Phase 4), yt-dlp E2E jobs/incremental sync (Phase 5), frontend adapter/migration (Phase 6), LAN auth hardening/perf benchmarks/full release readiness (Phase 7).
-- **Blocked by external platform limitations (by design):** confirmed write/sync of arbitrary views to YouTube account watch history via supported APIs (not assumed/claimed). Any "opened on YouTube" action must be recorded only as My Tube-initiated unless independently verifiable (it is not).
+- **Implemented and verified:** migrations/FTS/integrity, importer, search, domain weights/primitives, Phase 2 dual watch-history foundation (schema + additive migration + service + `/api/v1/history/*` APIs + truthful external-initiation semantics), **29 backend tests passing**.
+- **Implemented but not fully verified:** broader v1 contract/edge-case coverage (all resources, malformed pagination/DB-error paths, transaction-leak checks), history filtering/date-range completeness, LAN destructive-endpoint hardening under existing auth model.
+- **Partially implemented:** complete v1 API alignment, user-state apply, jobs/worker runtime + yt-dlp adapters, recommendation consumption of watch events.
+- **Not implemented (this session):** playback integration/UI settings (Phase 3), recommendation integration (Phase 4), yt-dlp E2E jobs/incremental sync (Phase 5), frontend adapter + safe localStorage migration (Phase 6), perf benchmarks/release readiness (Phase 7).
+- **Blocked by external platform limitations (by design):** confirmed write/sync of arbitrary views to YouTube account watch history via supported APIs is **not** assumed or claimed. External YouTube playback is recorded as My Tube-initiated only (`youtube_history_confirmed: false` always).
